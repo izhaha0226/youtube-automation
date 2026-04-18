@@ -1,0 +1,54 @@
+[project]
+name = "youtube-automation-api"
+version = "0.1.0"
+description = "Richgo YouTube automation API"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "sqlmodel>=0.0.22",
+  "alembic>=1.13",
+  "psycopg[binary]>=3.2",
+  "httpx>=0.27",
+  "tenacity>=9.0",
+  "structlog>=24.4",
+  "PyYAML>=6.0",
+  "python-dotenv>=1.0",
+  "openai>=1.55",
+  "anthropic>=0.40",
+  "fal-client>=0.5",
+  "google-api-python-client>=2.151",
+  "google-auth>=2.35",
+  "google-auth-oauthlib>=1.2",
+  "azure-cognitiveservices-speech>=1.41",
+  "feedparser>=6.0",
+  "beautifulsoup4>=4.12",
+  "lxml>=5.3",
+  "Pillow>=10.4",
+  "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.8",
+  "mypy>=1.13",
+]
+
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

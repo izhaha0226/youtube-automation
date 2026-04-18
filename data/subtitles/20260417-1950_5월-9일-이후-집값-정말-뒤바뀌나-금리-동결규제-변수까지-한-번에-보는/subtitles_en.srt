@@ -1,0 +1,615 @@
+1
+00:00:00,000 --> 00:00:04,839
+After May 9, in the housing market,
+
+2
+00:00:04,839 --> 00:00:07,258
+it won't be about home prices so much as
+
+3
+00:00:07,258 --> 00:00:11,794
+which signals
+
+4
+00:00:11,794 --> 00:00:13,911
+show up first.
+
+5
+00:00:13,911 --> 00:00:17,540
+That's what a lot of people are asking.
+
+6
+00:00:17,540 --> 00:00:21,774
+Will home prices start rising again now?
+
+7
+00:00:21,774 --> 00:00:26,613
+Or will they bounce briefly and turn back down?
+
+8
+00:00:26,613 --> 00:00:29,940
+But the market right now
+
+9
+00:00:29,940 --> 00:00:33,871
+keeps proving you wrong
+
+10
+00:00:33,871 --> 00:00:36,290
+if you look at it
+
+11
+00:00:36,290 --> 00:00:39,314
+in just one direction.
+
+12
+00:00:39,314 --> 00:00:41,431
+The reason is simple.
+
+13
+00:00:41,431 --> 00:00:45,665
+Right now, the country as a whole
+
+14
+00:00:45,665 --> 00:00:47,177
+is not moving
+
+15
+00:00:47,177 --> 00:00:56,553
+in a single cycle.
+
+16
+00:00:56,553 --> 00:00:58,972
+Interest rates, regulations, lending, and sentiment
+
+17
+00:00:58,972 --> 00:01:01,996
+are all working differently
+
+18
+00:01:01,996 --> 00:01:04,113
+from one region to another.
+
+19
+00:01:04,113 --> 00:01:07,137
+So today,
+
+20
+00:01:07,137 --> 00:01:10,766
+instead of asking whether prices will rise or fall,
+
+21
+00:01:10,766 --> 00:01:12,580
+we're going to look at
+
+22
+00:01:12,580 --> 00:01:14,697
+where the market will split first.
+
+23
+00:01:14,697 --> 00:01:16,511
+First,
+
+24
+00:01:16,511 --> 00:01:18,628
+let's start with the backdrop.
+
+25
+00:01:18,628 --> 00:01:21,955
+Right now, interest rates
+
+26
+00:01:21,955 --> 00:01:23,467
+do not look like
+
+27
+00:01:23,467 --> 00:01:28,003
+they're about to fall sharply.
+
+28
+00:01:28,003 --> 00:01:31,330
+When rates stay on hold,
+
+29
+00:01:31,330 --> 00:01:32,842
+it means two things
+
+30
+00:01:32,842 --> 00:01:36,471
+for the market.
+
+31
+00:01:36,471 --> 00:01:39,495
+Borrowing costs
+
+32
+00:01:39,495 --> 00:01:42,822
+are not getting worse
+
+33
+00:01:42,822 --> 00:01:44,939
+all that quickly.
+
+34
+00:01:44,939 --> 00:01:49,173
+But at the same time,
+
+35
+00:01:49,173 --> 00:01:50,685
+financial conditions are not improving enough
+
+36
+00:01:50,685 --> 00:01:53,407
+to push buying demand
+
+37
+00:01:53,407 --> 00:01:58,548
+that much either.
+
+38
+00:01:58,548 --> 00:02:01,572
+That's the key point.
+
+39
+00:02:01,572 --> 00:02:03,689
+If lending conditions don't loosen meaningfully,
+
+40
+00:02:03,689 --> 00:02:07,016
+regional gaps
+
+41
+00:02:07,016 --> 00:02:08,528
+only get wider.
+
+42
+00:02:08,528 --> 00:02:12,157
+Places supported by real end-user demand
+
+43
+00:02:12,157 --> 00:02:14,879
+will hold up.
+
+44
+00:02:14,879 --> 00:02:19,113
+Places with weak investor demand
+
+45
+00:02:19,113 --> 00:02:21,835
+will stay under more pressure.
+
+46
+00:02:21,835 --> 00:02:24,859
+This is where
+
+47
+00:02:24,859 --> 00:02:27,883
+the regulatory factor
+
+48
+00:02:27,883 --> 00:02:30,907
+also matters a great deal.
+
+49
+00:02:30,907 --> 00:02:33,931
+Real estate doesn't move
+
+50
+00:02:33,931 --> 00:02:36,653
+on interest rates alone.
+
+51
+00:02:36,653 --> 00:02:38,467
+Lending rules, taxes,
+
+52
+00:02:38,467 --> 00:02:40,281
+and policy messaging
+
+53
+00:02:40,281 --> 00:02:44,212
+can immediately change
+
+54
+00:02:44,212 --> 00:02:47,841
+the market's temperature.
+
+55
+00:02:47,841 --> 00:02:51,168
+If the market
+
+56
+00:02:51,168 --> 00:02:54,797
+reads it as deregulation,
+
+57
+00:02:54,797 --> 00:02:58,426
+expectations
+
+58
+00:02:58,426 --> 00:03:00,543
+can react before prices do.
+
+59
+00:03:00,543 --> 00:03:04,172
+On the other hand, if household debt controls
+
+60
+00:03:04,172 --> 00:03:08,103
+and tighter lending restrictions
+
+61
+00:03:08,103 --> 00:03:09,615
+are emphasized,
+
+62
+00:03:09,615 --> 00:03:12,639
+transaction activity
+
+63
+00:03:12,639 --> 00:03:17,175
+could shrink again first.
+
+64
+00:03:17,175 --> 00:03:20,804
+So when looking
+
+65
+00:03:20,804 --> 00:03:22,316
+at the period after May 9,
+
+66
+00:03:22,316 --> 00:03:23,828
+before you look at price numbers,
+
+67
+00:03:23,828 --> 00:03:27,759
+you need to read
+
+68
+00:03:27,759 --> 00:03:30,178
+the policy signals first.
+
+69
+00:03:30,178 --> 00:03:31,992
+Is the message being sent to the market
+
+70
+00:03:31,992 --> 00:03:34,411
+easing,
+
+71
+00:03:34,411 --> 00:03:36,830
+or restraint?
+
+72
+00:03:36,830 --> 00:03:40,761
+That difference is enormous.
+
+73
+00:03:40,761 --> 00:03:44,390
+Now let's look
+
+74
+00:03:44,390 --> 00:03:46,507
+at the scenarios.
+
+75
+00:03:46,507 --> 00:03:51,043
+First,
+
+76
+00:03:51,043 --> 00:03:55,277
+rates have paused,
+
+77
+00:03:55,277 --> 00:03:57,394
+and regulatory pressure is limited.
+
+78
+00:03:57,394 --> 00:04:02,233
+In that case, the most desirable areas
+
+79
+00:04:02,233 --> 00:04:04,652
+and prime locations
+
+80
+00:04:04,652 --> 00:04:07,374
+could see transactions recover first.
+
+81
+00:04:07,374 --> 00:04:10,096
+Even if prices don't jump sharply,
+
+82
+00:04:10,096 --> 00:04:13,725
+they may stabilize first
+
+83
+00:04:13,725 --> 00:04:17,656
+or edge up modestly.
+
+84
+00:04:17,656 --> 00:04:21,890
+Second,
+
+85
+00:04:21,890 --> 00:04:24,309
+rates have paused,
+
+86
+00:04:24,309 --> 00:04:28,240
+but regulations tighten
+
+87
+00:04:28,240 --> 00:04:30,357
+or the lending bar gets higher.
+
+88
+00:04:30,357 --> 00:04:32,474
+Then buyers waiting on the sidelines
+
+89
+00:04:32,474 --> 00:04:34,893
+shift back into wait-and-see mode.
+
+90
+00:04:34,893 --> 00:04:38,824
+At that point, more than prices,
+
+91
+00:04:38,824 --> 00:04:42,151
+transaction volume
+
+92
+00:04:42,151 --> 00:04:46,082
+cools off first.
+
+93
+00:04:46,082 --> 00:04:49,711
+The market
+
+94
+00:04:49,711 --> 00:04:51,223
+starts to feel quiet.
+
+95
+00:04:51,223 --> 00:04:55,759
+Third,
+
+96
+00:04:55,759 --> 00:04:59,086
+the national average stays muted.
+
+97
+00:04:59,086 --> 00:05:03,017
+But Seoul's core districts
+
+98
+00:05:03,017 --> 00:05:07,251
+and some parts of the metro area stay strong.
+
+99
+00:05:07,251 --> 00:05:10,275
+By contrast, provincial areas and outer suburbs
+
+100
+00:05:10,275 --> 00:05:13,602
+remain weak.
+
+101
+00:05:13,602 --> 00:05:17,231
+That means
+
+102
+00:05:17,231 --> 00:05:19,650
+a fully bifurcated market
+
+103
+00:05:19,650 --> 00:05:21,767
+continues.
+
+104
+00:05:21,767 --> 00:05:24,489
+Right now, I think
+
+105
+00:05:24,489 --> 00:05:29,025
+this third scenario
+
+106
+00:05:29,025 --> 00:05:31,747
+is the most realistic.
+
+107
+00:05:31,747 --> 00:05:35,678
+We've already seen
+
+108
+00:05:35,678 --> 00:05:36,887
+similar patterns
+
+109
+00:05:36,887 --> 00:05:40,516
+many times.
+
+110
+00:05:40,516 --> 00:05:44,447
+Even under the same rate environment,
+
+111
+00:05:44,447 --> 00:05:46,866
+places backed by jobs
+
+112
+00:05:46,866 --> 00:05:50,193
+and strong school districts
+
+113
+00:05:50,193 --> 00:05:53,520
+tend to attract
+
+114
+00:05:53,520 --> 00:05:55,939
+transactions.
+
+115
+00:05:55,939 --> 00:05:58,661
+Places with expectations of better transit
+
+116
+00:05:58,661 --> 00:06:00,173
+also react first.
+
+117
+00:06:00,173 --> 00:06:02,592
+By contrast, places facing
+
+118
+00:06:02,592 --> 00:06:05,919
+a heavy wave of new supply.
+
+119
+00:06:05,919 --> 00:06:07,431
+Places with weak demand fundamentals.
+
+120
+00:06:07,431 --> 00:06:09,245
+These areas recover
+
+121
+00:06:09,245 --> 00:06:12,269
+much more slowly.
+
+122
+00:06:12,269 --> 00:06:15,293
+In the end, the economy
+
+123
+00:06:15,293 --> 00:06:18,620
+and real estate do not move separately.
+
+124
+00:06:18,620 --> 00:06:21,644
+Just because rates have paused
+
+125
+00:06:21,644 --> 00:06:24,668
+doesn't mean prices
+
+126
+00:06:24,668 --> 00:06:27,390
+immediately go up.
+
+127
+00:06:27,390 --> 00:06:29,507
+And just because new regulations appear
+
+128
+00:06:29,507 --> 00:06:32,229
+doesn't mean the market
+
+129
+00:06:32,229 --> 00:06:36,463
+automatically crashes.
+
+130
+00:06:36,463 --> 00:06:39,487
+The real market
+
+131
+00:06:39,487 --> 00:06:42,209
+is far more complex.
+
+132
+00:06:42,209 --> 00:06:44,628
+Income conditions,
+
+133
+00:06:44,628 --> 00:06:49,769
+borrowing capacity,
+
+134
+00:06:49,769 --> 00:06:52,793
+local demand,
+
+135
+00:06:52,793 --> 00:06:56,120
+and policy interpretation
+
+136
+00:06:56,120 --> 00:06:57,632
+all move together.
+
+137
+00:06:57,632 --> 00:06:59,446
+So right now,
+
+138
+00:06:59,446 --> 00:07:03,982
+more than a one-line forecast,
+
+139
+00:07:03,982 --> 00:07:09,426
+it's much more important
+
+140
+00:07:09,426 --> 00:07:11,845
+to see which scenario
+
+141
+00:07:11,845 --> 00:07:13,962
+your area falls into.
+
+142
+00:07:13,962 --> 00:07:19,103
+To sum up,
+
+143
+00:07:19,103 --> 00:07:23,034
+the key to home prices after May 9
+
+144
+00:07:23,034 --> 00:07:26,663
+is not
+
+145
+00:07:26,663 --> 00:07:29,082
+answering in one word
+
+146
+00:07:29,082 --> 00:07:32,106
+whether they'll rise or fall.
+
+147
+00:07:32,106 --> 00:07:35,433
+A rate pause
+
+148
+00:07:35,433 --> 00:07:38,760
+can help support the floor.
+
+149
+00:07:38,760 --> 00:07:41,784
+But depending on regulation and lending signals,
+
+150
+00:07:41,784 --> 00:07:46,320
+some areas may recover
+
+151
+00:07:46,320 --> 00:07:49,647
+while others
+
+152
+00:07:49,647 --> 00:07:52,671
+get held back more clearly.
+
+153
+00:07:52,671 --> 00:07:56,905
+What will matter even more going forward
+
+154
+00:07:56,905 --> 00:07:59,929
+is not the average price.

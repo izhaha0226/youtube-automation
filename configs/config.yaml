@@ -1,0 +1,32 @@
+project_name: youtube-automation
+channel_name: 리치고
+share_link: https://share.note.sx/qynhdluo
+default_model: gpt-5.4
+backup_model: claude-opus-4-7
+sync_mode: obsidian_first
+languages:
+  - ko
+  - en
+  - ja
+  - zh
+benchmark_channels:
+  - name: 삼프로TV
+    channel_id: UChlv4GSd7OQl3js-jkLOnFA
+  - name: 김작가TV
+    channel_id: UCvil4OAt-zShzkKHsg9EQAw
+  - name: 부동산김사부
+    channel_id: UC2rRsSOig2nHpGQhH8A8CcQ
+  - name: 리치고
+    channel_id: UC3nsb3SxlRrJQ9egkKNnlfg
+obsidian_vault: /Users/yosiki/Documents/Obsidian Vault/wiki/YouTube 자동화프로젝트
+obsidian_share_link: https://share.note.sx/qynhdluo
+output_kinds:
+  - topic
+  - scenario
+  - review
+  - narration
+  - subtitle
+  - thumbnail
+  - package
+  - upload
+  - performance

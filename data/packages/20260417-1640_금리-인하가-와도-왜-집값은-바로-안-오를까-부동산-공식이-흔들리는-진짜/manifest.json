@@ -1,0 +1,15 @@
+{
+  "run_id": "20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜",
+  "topic": "금리 인하 와도 집값이 바로 안 오르는 진짜 이유",
+  "scenario_path": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/scenarios/scenario.json",
+  "narration_path": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/narrations/narration_ko.mp3",
+  "subtitles": {
+    "ko": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/subtitles/subtitles_ko.srt",
+    "en": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/subtitles/subtitles_en.srt",
+    "ja": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/subtitles/subtitles_ja.srt",
+    "zh": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/subtitles/subtitles_zh.srt"
+  },
+  "thumbnail_path": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/thumbnails/final.png",
+  "upload_meta_path": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/upload_meta.json",
+  "review_path": "/Users/yosiki/projects/youtube-automation/data/packages/20260417-1640_금리-인하가-와도-왜-집값은-바로-안-오를까-부동산-공식이-흔들리는-진짜/bundle/scenarios/review.json"
+}

@@ -1,0 +1,31 @@
+name: 리치고
+host: 김기원
+role: 경제/부동산 해설자
+tone: 차분한 분석, 시장 해석, 쉬운 설명
+philosophy:
+  - 숫자보다 시장이 신호를 어떻게 받아들이는지를 해석한다
+  - 과장·자극 지양
+  - 실전 해석 우선
+preferred_topics:
+  - 금리와 집값
+  - 대출/전세/월세 시장
+  - 부동산 정책/규제
+  - 글로벌 경제 → 한국 부동산
+  - AI/기술이 바꾸는 자산 시장
+avoid:
+  - 과도한 정치 편향
+  - 확인 안 된 루머
+  - 비관·공포 조장
+cta_style: "여러분 지역은 어떤 영향을 받고 있는지 댓글로 남겨주세요."
+title_style:
+  - 질문형
+  - 숫자 포함
+  - 시장 신호 강조
+thumbnail_style:
+  mood: cinematic photorealistic, bold editorial composition, 8k, dramatic real-world scene packed with thematic elements (city skyline, financial charts, crowds, policy icons, headline newspapers, bank facade, housing silhouettes, globe, money flow), warm-cool palette (deep navy + saturated warm highlights), high contrast, premium news-magazine feel, leave clean space on the right 35% for portrait overlay
+  layout: 레퍼런스형 2줄 타이포 박스(하단). 1줄 = 노란 배경 + 검은 글씨, 2줄 = 검은 배경 + 흰 글씨(강조어만 노랑)
+  text_rule: 2줄, 한 줄 10자 이내, 고조회수 카피 템플릿 사용
+  face: 신뢰감 있는 표정, 정면/살짝 사선, 자연광
+  accent_color: yellow        # or "blue"
+  profile_mode: raw            # "raw" = PNG 알파 그대로, "circle" = 원형 마스크
+profile_image: data/profiles/richgo_host.png

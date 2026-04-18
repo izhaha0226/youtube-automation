@@ -1,0 +1,231 @@
+1
+00:00:00,000 --> 00:00:04,576
+Lower interest rates mean home prices go up.
+
+2
+00:00:04,576 --> 00:00:10,297
+That formula used to work pretty well.
+
+3
+00:00:10,297 --> 00:00:15,445
+But this time could be different.
+
+4
+00:00:15,445 --> 00:00:25,170
+Even if rates come down, home prices may not react right away.
+
+5
+00:00:25,170 --> 00:00:27,172
+Why is that?
+
+6
+00:00:27,172 --> 00:00:36,611
+Because the market no longer moves on interest rates alone.
+
+7
+00:00:36,611 --> 00:00:48,911
+Lending rules, economic uncertainty, and buyer sentiment are all tangled together.
+
+8
+00:00:48,911 --> 00:00:54,346
+Today, let's break that down in simple terms.
+
+9
+00:00:54,346 --> 00:01:03,785
+In today's market, the first thing to watch is not the rate cut itself.
+
+10
+00:01:03,785 --> 00:01:12,652
+What's more important is how people interpret that signal.
+
+11
+00:01:12,652 --> 00:01:20,375
+In the past, when rates fell, borrowing became less burdensome.
+
+12
+00:01:20,375 --> 00:01:27,240
+So demand from homebuyers picked up quickly.
+
+13
+00:01:27,240 --> 00:01:32,388
+But the mood is different now.
+
+14
+00:01:32,388 --> 00:01:38,681
+Even if rates ease a little, the economy still feels uncertain.
+
+15
+00:01:38,681 --> 00:01:44,974
+People are less confident about whether their income will hold up.
+
+16
+00:01:44,974 --> 00:01:51,267
+So they don't move right away.
+
+17
+00:01:51,267 --> 00:01:58,132
+Instead of buying now, they choose to wait and see a little longer.
+
+18
+00:01:58,132 --> 00:02:07,285
+In the end, if sentiment is frozen, home prices respond slowly.
+
+19
+00:02:07,285 --> 00:02:16,438
+And in Korea, lending restrictions have an outsized impact on the housing market.
+
+20
+00:02:16,438 --> 00:02:21,873
+A policy rate cut is not the whole story.
+
+21
+00:02:21,873 --> 00:02:30,168
+What matters more is how much I can actually borrow.
+
+22
+00:02:30,168 --> 00:02:33,886
+That's where people really feel the difference.
+
+23
+00:02:33,886 --> 00:02:46,758
+If regulations like DSR stay tight, a small drop in rates doesn't do much to boost buying power.
+
+24
+00:02:46,758 --> 00:02:57,055
+In other words, a slightly cheaper cost of money doesn't mean people can jump in and buy right away.
+
+25
+00:02:57,055 --> 00:03:04,778
+What moves the market is the amount of funding people can actually access.
+
+26
+00:03:04,778 --> 00:03:12,501
+If that door stays closed, the effect of lower rates is limited too.
+
+27
+00:03:12,501 --> 00:03:21,082
+Another thing to watch is why rates are being cut.
+
+28
+00:03:21,082 --> 00:03:28,519
+Rate cuts usually come in response to a slowing economy.
+
+29
+00:03:28,519 --> 00:03:37,100
+So the market doesn't just look at the fact that rates went down.
+
+30
+00:03:37,100 --> 00:03:42,535
+It also looks at why they are coming down now.
+
+31
+00:03:42,535 --> 00:03:50,830
+If the slowdown signal is strong, the mood shifts.
+
+32
+00:03:50,830 --> 00:03:59,411
+People would rather hold cash than buy a home.
+
+33
+00:03:59,411 --> 00:04:05,990
+The more uncertainty there is, the more people choose safety.
+
+34
+00:04:05,990 --> 00:04:20,292
+So even if a rate cut looks like good news, it also brings the bad news of economic anxiety.
+
+35
+00:04:20,292 --> 00:04:28,873
+And the market is likely to move differently depending on the area.
+
+36
+00:04:28,873 --> 00:04:38,598
+Prime districts in Seoul, where demand is solid, may react faster.
+
+37
+00:04:38,598 --> 00:04:47,465
+Just the expectation of lower rates could bring transactions back first.
+
+38
+00:04:47,465 --> 00:04:55,188
+But outer areas or regions facing supply pressure are different.
+
+39
+00:04:55,188 --> 00:05:03,483
+Even if rates fall, buyers may not return easily.
+
+40
+00:05:03,483 --> 00:05:09,204
+In some places, transaction volume moves first.
+
+41
+00:05:09,204 --> 00:05:14,639
+In others, jeonse prices react first.
+
+42
+00:05:14,639 --> 00:05:20,646
+And in some areas, unsold inventory matters more.
+
+43
+00:05:20,646 --> 00:05:30,085
+That's why it's hard to explain nationwide home prices with a single formula right now.
+
+44
+00:05:30,085 --> 00:05:38,666
+You have to look at local market strength and supply-demand conditions together.
+
+45
+00:05:38,666 --> 00:05:51,252
+In short, the housing market no longer moves on a single headline about rate cuts.
+
+46
+00:05:51,252 --> 00:06:05,554
+Rates, regulations, the economy, supply, and sentiment are all interacting at once.
+
+47
+00:06:05,554 --> 00:06:10,702
+That's why the market is reacting more slowly.
+
+48
+00:06:10,702 --> 00:06:15,278
+And the gap between regions has widened too.
+
+49
+00:06:15,278 --> 00:06:27,292
+Whether you're an investor or an end-user, you shouldn't rush to judge the market just because rates have come down.
+
+50
+00:06:27,292 --> 00:06:32,440
+You need to watch whether transaction volume is picking up.
+
+51
+00:06:32,440 --> 00:06:39,019
+You also need to see whether the lending window is actually opening.
+
+52
+00:06:39,019 --> 00:06:46,170
+And you need to check whether buyer sentiment is recovering too.
+
+53
+00:06:46,170 --> 00:06:59,328
+In the end, if rate cuts come but home prices don't rise right away, it's not because the old market formula has broken.
+
+54
+00:06:59,328 --> 00:07:05,621
+It's because the formula has become more complex.
+
+55
+00:07:05,621 --> 00:07:21,354
+Now, more than the rate itself, you have to watch how that rate flows through lending, the economy, sentiment, and local supply-demand conditions.
+
+56
+00:07:21,354 --> 00:07:31,651
+Going forward, if you want to read market signals, just watching for rate cuts won't be enough.
+
+57
+00:07:31,651 --> 00:07:50,816
+It matters more to interpret transaction volume, listing trends, borrowing capacity, and regional gaps together.
+
+58
+00:07:50,816 --> 00:07:59,969
+Tell us in the comments how your area is being affected.

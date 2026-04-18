@@ -1,0 +1,26 @@
+axes:
+  popularity:
+    name: 대중성
+    range: [0, 5]
+  economy:
+    name: 경제 연결성
+    range: [0, 5]
+  realestate:
+    name: 부동산 연결성
+    range: [0, 5]
+  virality:
+    name: 조회수 가능성
+    range: [0, 5]
+  richgo_fit:
+    name: 리치고 적합성
+    range: [0, 5]
+  discussion:
+    name: 댓글 토론 가능성
+    range: [0, 5]
+
+thresholds:
+  strong_recommend: 24
+  recommend: 18
+  hold: 17
+
+top_k: 3

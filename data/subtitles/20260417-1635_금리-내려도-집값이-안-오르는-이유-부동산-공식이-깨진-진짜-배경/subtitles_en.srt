@@ -1,0 +1,543 @@
+1
+00:00:00,000 --> 00:00:04,267
+Today, let's start from the beginning.
+
+2
+00:00:04,267 --> 00:00:07,112
+Even if *interest rates* fall,
+
+3
+00:00:07,112 --> 00:00:12,802
+this is why home prices don't rise right away.
+
+4
+00:00:12,802 --> 00:00:17,354
+In the past, the formula was simple.
+
+5
+00:00:17,354 --> 00:00:19,345
+When rates went down,
+
+6
+00:00:19,345 --> 00:00:22,474
+borrowing became less burdensome.
+
+7
+00:00:22,474 --> 00:00:25,603
+Then more money flowed into the market,
+
+8
+00:00:25,603 --> 00:00:28,732
+and buyers stepped in.
+
+9
+00:00:28,732 --> 00:00:31,008
+So home prices,
+
+10
+00:00:31,008 --> 00:00:34,137
+responded almost immediately.
+
+11
+00:00:34,137 --> 00:00:37,835
+But that's not the case now.
+
+12
+00:00:37,835 --> 00:00:39,542
+This formula,
+
+13
+00:00:39,542 --> 00:00:45,232
+doesn't work *automatically* like it used to.
+
+14
+00:00:45,232 --> 00:00:49,215
+Even Seoul's apartment market,
+
+15
+00:00:49,215 --> 00:00:52,913
+doesn't move right away.
+
+16
+00:00:52,913 --> 00:00:54,904
+Why is that?
+
+17
+00:00:54,904 --> 00:00:57,180
+Because real estate now,
+
+18
+00:00:57,180 --> 00:01:03,439
+doesn't move on interest rates alone anymore.
+
+19
+00:01:03,439 --> 00:01:05,430
+In today's market,
+
+20
+00:01:05,430 --> 00:01:10,551
+you have to look at people's *sentiment*.
+
+21
+00:01:10,551 --> 00:01:13,396
+You also have to look at income,
+
+22
+00:01:13,396 --> 00:01:17,379
+and the economic outlook too.
+
+23
+00:01:17,379 --> 00:01:19,939
+If the future feels uncertain,
+
+24
+00:01:19,939 --> 00:01:25,914
+even a small rate cut won't get people moving.
+
+25
+00:01:25,914 --> 00:01:30,181
+The backdrop makes it even clearer.
+
+26
+00:01:30,181 --> 00:01:31,603
+In the past,
+
+27
+00:01:31,603 --> 00:01:36,439
+as soon as loans became easier to get, people bought.
+
+28
+00:01:36,439 --> 00:01:38,999
+Now it's different.
+
+29
+00:01:38,999 --> 00:01:41,559
+Across the Korean economy,
+
+30
+00:01:41,559 --> 00:01:44,404
+uncertainty is high.
+
+31
+00:01:44,404 --> 00:01:48,102
+There are concerns about slower growth,
+
+32
+00:01:48,102 --> 00:01:51,800
+and household debt is still a heavy burden.
+
+33
+00:01:51,800 --> 00:01:55,214
+Real income feels stuck.
+
+34
+00:01:55,214 --> 00:01:57,774
+In this kind of environment,
+
+35
+00:01:57,774 --> 00:02:01,188
+even if rates come down a little,
+
+36
+00:02:01,188 --> 00:02:03,748
+it's hard to say,
+
+37
+00:02:03,748 --> 00:02:08,015
+now is the time to buy a home.
+
+38
+00:02:08,015 --> 00:02:10,006
+The key, in the end,
+
+39
+00:02:10,006 --> 00:02:12,851
+is *buyer sentiment*.
+
+40
+00:02:12,851 --> 00:02:18,541
+Home prices don't rise just because of the numbers.
+
+41
+00:02:18,541 --> 00:02:22,808
+People have to feel like,
+
+42
+00:02:22,808 --> 00:02:26,791
+now is a good time to buy.
+
+43
+00:02:26,791 --> 00:02:30,774
+Even in Seoul's apartment market right now,
+
+44
+00:02:30,774 --> 00:02:35,041
+some high-demand areas are holding up.
+
+45
+00:02:35,041 --> 00:02:38,170
+But overall,
+
+46
+00:02:38,170 --> 00:02:40,730
+conviction is weak.
+
+47
+00:02:40,730 --> 00:02:43,575
+Will prices go higher from here?
+
+48
+00:02:43,575 --> 00:02:46,704
+People just aren't sure.
+
+49
+00:02:46,704 --> 00:02:50,118
+Will the economy hold up?
+
+50
+00:02:50,118 --> 00:02:53,816
+They're not confident about that either.
+
+51
+00:02:53,816 --> 00:02:56,661
+Will my income hold up?
+
+52
+00:02:56,661 --> 00:02:59,506
+That's uncertain too.
+
+53
+00:02:59,506 --> 00:03:02,351
+Without that confidence,
+
+54
+00:03:02,351 --> 00:03:07,187
+transactions don't come back easily.
+
+55
+00:03:07,187 --> 00:03:12,308
+There's an important point here.
+
+56
+00:03:12,308 --> 00:03:17,714
+A *rate cut* is not always,
+
+57
+00:03:17,714 --> 00:03:20,274
+a positive signal.
+
+58
+00:03:20,274 --> 00:03:23,119
+Of course, rate cuts,
+
+59
+00:03:23,119 --> 00:03:27,671
+can be positive for the market.
+
+60
+00:03:27,671 --> 00:03:30,516
+But on their own,
+
+61
+00:03:30,516 --> 00:03:33,930
+they are not a magic signal.
+
+62
+00:03:33,930 --> 00:03:37,059
+In fact, if a rate cut,
+
+63
+00:03:37,059 --> 00:03:42,465
+is meant to prevent an economic downturn,
+
+64
+00:03:42,465 --> 00:03:47,017
+people read it differently.
+
+65
+00:03:47,017 --> 00:03:47,586
+Oh,
+
+66
+00:03:47,586 --> 00:03:51,284
+maybe things aren't looking good.
+
+67
+00:03:51,284 --> 00:03:55,267
+That's how they may take it.
+
+68
+00:03:55,267 --> 00:03:59,819
+Then even if lending conditions improve,
+
+69
+00:03:59,819 --> 00:04:04,655
+they don't immediately start buying aggressively.
+
+70
+00:04:04,655 --> 00:04:09,776
+Instead, they try to protect their *cash*.
+
+71
+00:04:09,776 --> 00:04:12,905
+Right now, this kind of sentiment,
+
+72
+00:04:12,905 --> 00:04:17,172
+has an even bigger impact on the market.
+
+73
+00:04:17,172 --> 00:04:20,586
+That's why even if rates fall,
+
+74
+00:04:20,586 --> 00:04:24,284
+you shouldn't assume,
+
+75
+00:04:24,284 --> 00:04:27,982
+that home prices will automatically go up.
+
+76
+00:04:27,982 --> 00:04:32,818
+There's one more thing to watch.
+
+77
+00:04:32,818 --> 00:04:35,094
+Seoul apartments, too,
+
+78
+00:04:35,094 --> 00:04:39,361
+do not all move together.
+
+79
+00:04:39,361 --> 00:04:42,775
+Even under the same rate environment,
+
+80
+00:04:42,775 --> 00:04:47,042
+prime areas respond differently.
+
+81
+00:04:47,042 --> 00:04:49,033
+Places with strong locations,
+
+82
+00:04:49,033 --> 00:04:52,162
+and solid demand,
+
+83
+00:04:52,162 --> 00:04:57,568
+can hold up or even rebound somewhat.
+
+84
+00:04:57,568 --> 00:05:01,266
+Outlying areas are different.
+
+85
+00:05:01,266 --> 00:05:04,395
+In areas with weaker demand,
+
+86
+00:05:04,395 --> 00:05:07,809
+the response is much slower.
+
+87
+00:05:07,809 --> 00:05:11,507
+Why does this gap happen?
+
+88
+00:05:11,507 --> 00:05:13,498
+Because today's market,
+
+89
+00:05:13,498 --> 00:05:16,343
+looks at more than just *rates alone*.
+
+90
+00:05:16,343 --> 00:05:21,464
+It looks at supply conditions,
+
+91
+00:05:21,464 --> 00:05:23,740
+whether local demand is there,
+
+92
+00:05:23,740 --> 00:05:26,869
+whether incomes can support prices,
+
+93
+00:05:26,869 --> 00:05:30,567
+and whether sentiment is recovering.
+
+94
+00:05:30,567 --> 00:05:33,412
+These factors have become more important.
+
+95
+00:05:33,412 --> 00:05:38,248
+In the end, the simple formula from the past,
+
+96
+00:05:38,248 --> 00:05:42,515
+has lost much of its power.
+
+97
+00:05:42,515 --> 00:05:45,360
+Now you have to look at the market more broadly.
+
+98
+00:05:45,360 --> 00:05:50,766
+So then,
+
+99
+00:05:50,766 --> 00:05:52,757
+what should we be watching now?
+
+100
+00:05:52,757 --> 00:05:55,886
+First,
+
+101
+00:05:55,886 --> 00:05:56,739
+whether buyer sentiment is recovering.
+
+102
+00:05:56,739 --> 00:06:01,006
+You need to see whether people are done waiting,
+
+103
+00:06:01,006 --> 00:06:04,704
+and are actually starting to move.
+
+104
+00:06:04,704 --> 00:06:09,256
+Second,
+
+105
+00:06:09,256 --> 00:06:10,109
+whether *transaction volume* is picking up.
+
+106
+00:06:10,109 --> 00:06:14,092
+Before prices recover, transactions have to come back first,
+
+107
+00:06:14,092 --> 00:06:18,928
+for the momentum to continue.
+
+108
+00:06:18,928 --> 00:06:21,773
+Third,
+
+109
+00:06:21,773 --> 00:06:22,626
+whether demand is recovering by area.
+
+110
+00:06:22,626 --> 00:06:26,324
+Even within Seoul,
+
+111
+00:06:26,324 --> 00:06:28,600
+you need to see which areas move first,
+
+112
+00:06:28,600 --> 00:06:32,298
+and watch the gap between them.
+
+113
+00:06:32,298 --> 00:06:35,996
+Only when these three come together,
+
+114
+00:06:35,996 --> 00:06:39,410
+does a rate cut translate into actual price gains.
+
+115
+00:06:39,410 --> 00:06:45,385
+To sum it up.
+
+116
+00:06:45,385 --> 00:06:47,945
+Today's market,
+
+117
+00:06:47,945 --> 00:06:49,936
+can't be explained by a rate cut alone.
+
+118
+00:06:49,936 --> 00:06:55,911
+What matters more,
+
+119
+00:06:55,911 --> 00:06:57,618
+is what kind of signal people take from it afterward.
+
+120
+00:06:57,618 --> 00:07:02,170
+If they feel anxious,
+
+121
+00:07:02,170 --> 00:07:05,299
+rates can fall and transactions still won't pick up.
+
+122
+00:07:05,299 --> 00:07:07,575
+If they feel confident,
+
+123
+00:07:07,575 --> 00:07:12,981
+that's when the market starts moving.
+
+124
+00:07:12,981 --> 00:07:15,257
+So going forward,
+
+125
+00:07:15,257 --> 00:07:19,524
+don't just watch rates.
+
+126
+00:07:19,524 --> 00:07:22,084
+You also need to watch *sentiment*, *transaction volume*, and *local demand*,
+
+127
+00:07:22,084 --> 00:07:25,213
+together.
+
+128
+00:07:25,213 --> 00:07:31,472
+The direction of home prices,
+
+129
+00:07:31,472 --> 00:07:34,601
+depends more heavily on these three factors.
+
+130
+00:07:34,601 --> 00:07:36,592
+What is your area like right now?
+
+131
+00:07:36,592 --> 00:07:41,998
+Are you seeing the impact of rates right away?
+
+132
+00:07:41,998 --> 00:07:46,550
+Or is it still quiet?
+
+133
+00:07:46,550 --> 00:07:50,817
+Leave a comment,
+
+134
+00:07:50,817 --> 00:07:54,515
+and let's take a look together.
+
+135
+00:07:54,515 --> 00:07:57,360
+
+
+136
+00:07:57,360 --> 00:07:59,920
+
