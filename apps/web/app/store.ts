@@ -15,7 +15,26 @@ type TopicCandidate = {
   keywords: string[];
 };
 type TopicResult = { recommended_topics: TopicCandidate[]; selected_topic: string; selected_reason: string };
-type ScenarioOutput = { hook: string; body: string[]; conclusion: string; cta: string; title_candidates: string[]; thumbnail_candidates: string[]; opening: string };
+type ScenarioSection = { heading: string; script: string };
+type ScenarioOutput = {
+  hook: string;
+  hook_30s?: string;
+  bridge_3min?: string;
+  body: string[];
+  body_sections?: ScenarioSection[];
+  conclusion: string;
+  action_takeaways?: string[];
+  cta: string;
+  title_candidates: string[];
+  thumbnail_candidates: string[];
+  opening: string;
+  opening_title?: string;
+  estimated_duration_min?: number;
+};
+type ResearchSource = { type: string; title: string; url?: string; summary?: string; keywords?: string[] };
+type ResearchArticle = { id: string; title: string; source?: string; url?: string; published_at?: string; summary?: string; keywords?: string[]; related_score?: number; selected?: boolean };
+type ResearchVideo = { id: string; youtube_video_id?: string; title: string; channel?: string; url?: string; views?: number; published_at?: string; relevance_score?: number; selected?: boolean };
+type ResearchSession = { session_id: string; mode: string; category?: string; source: ResearchSource; articles: ResearchArticle[]; videos: ResearchVideo[] };
 
 export type DashboardState = {
   trends: TrendData | null;
@@ -26,19 +45,25 @@ export type DashboardState = {
   selectedTopic: string | null;
   scenario: ScenarioOutput | null;
   period: string;
+  researchMode?: "url" | "category";
+  researchUrl?: string;
+  researchCategory?: string;
+  research?: ResearchSession | null;
+  selectedArticleIds?: string[];
+  selectedVideoIds?: string[];
 };
 
 const STORAGE_KEY = "yt-auto-dashboard";
 
 export function saveDashboard(state: DashboardState) {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
 }
 
 export function loadDashboard(): DashboardState | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -46,4 +71,4 @@ export function loadDashboard(): DashboardState | null {
   }
 }
 
-export type { TrendData, TrendItem, BenchmarkVideo, ChartData, TopicCandidate, TopicResult, ScenarioOutput };
+export type { TrendData, TrendItem, BenchmarkVideo, ChartData, TopicCandidate, TopicResult, ScenarioOutput, ResearchSession, ResearchArticle, ResearchVideo };

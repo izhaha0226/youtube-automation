@@ -8,8 +8,10 @@ from app.core.db import init_db
 from app.core.logging import configure_logging, get_logger
 from app.routes import (
     health,
+    narrations,
     performance,
     pipeline,
+    research,
     reviews,
     scenarios,
     subtitles,
@@ -46,6 +48,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(narrations.router, prefix="/narrations", tags=["narrations"])
 app.include_router(topics.router, prefix="/topics", tags=["topics"])
 app.include_router(scenarios.router, prefix="/scenarios", tags=["scenarios"])
 app.include_router(reviews.router, prefix="/reviews", tags=["reviews"])
@@ -54,4 +57,5 @@ app.include_router(thumbnails.router, prefix="/thumbnails", tags=["thumbnails"])
 app.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
 app.include_router(performance.router, prefix="/performance", tags=["performance"])
 app.include_router(trends.router, prefix="/trends", tags=["trends"])
+app.include_router(research.router, prefix="/research", tags=["research"])
 app.include_router(pipeline.router, prefix="/pipeline", tags=["pipeline"])

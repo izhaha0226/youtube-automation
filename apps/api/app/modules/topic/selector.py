@@ -33,6 +33,8 @@ def select_topic(payload: TopicInput) -> TopicResult:
         must_include=", ".join(payload.must_include) or "(없음)",
         current_issues=json.dumps(current_issues, ensure_ascii=False),
         trend_keywords=", ".join(trend_keywords[:30]) or "(없음)",
+        source_mode=("research-backed" if payload.current_issues or payload.trend_keywords else "trend-scan"),
+        target_speed="오늘 바로 촬영 가능한 주제를 우선",
     )
     data = llm(temperature=0.5).generate_json(system=system, user=user)
 

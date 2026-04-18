@@ -80,3 +80,65 @@ class PerformanceRecord(SQLModel, table=True):
     likes: int = 0
     comments: int = 0
     payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+
+
+class ResearchSession(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    mode: str = Field(index=True)  # url | category
+    category: str | None = None
+    source_url: str | None = None
+    source_title: str | None = None
+    source_summary: str | None = None
+    source_keywords: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    selected_article_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    selected_video_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ArticleRecord(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    session_id: str = Field(index=True)
+    title: str
+    source: str = ""
+    url: str = ""
+    published_at: str | None = None
+    summary: str = ""
+    keywords: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    related_score: float = 0.0
+    selected: bool = False
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class VideoReferenceRecord(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    session_id: str = Field(index=True)
+    youtube_video_id: str | None = None
+    title: str
+    channel: str = ""
+    url: str = ""
+    views: int = 0
+    published_at: str | None = None
+    relevance_score: float = 0.0
+    selected: bool = False
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ScenarioWorkspace(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    session_id: str = Field(index=True)
+    selected_topic: str
+    target_duration_min: int = 10
+    target_duration_max: int = 12
+    hook_30s: str = ""
+    bridge_3min: str = ""
+    body_sections: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+    full_script_markdown: str = ""
+    title_candidates: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    thumbnail_candidates: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    references_snapshot: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    status: str = "draft"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

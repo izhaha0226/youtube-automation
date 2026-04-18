@@ -8,7 +8,7 @@ from fastapi import APIRouter, Query
 
 from app.modules.trend.benchmark import fetch_all_benchmarks
 from app.modules.trend.naver_trend import fetch_search_trend
-from app.modules.trend.scanner import scan
+from app.modules.trend.scanner import fetch_community, scan
 
 router = APIRouter()
 
@@ -79,7 +79,11 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
     news_filtered = filter_by_period(snap.news, "pub", days)
 
     # 명사 키워드만 추출
-    all_titles = [x.get("title", "") for x in yt_filtered] + [x.get("title", "") for x in news_filtered]
+    all_titles = (
+        [x.get("title", "") for x in yt_filtered]
+        + [x.get("title", "") for x in news_filtered]
+        + [x.get("title", "") for x in snap.community]
+    )
     noun_freq: dict[str, int] = Counter()
     for t in all_titles:
         for noun in extract_nouns(t):
@@ -151,5 +155,40 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
             "top3_timeline": timeline_data,
             "top3_keywords": top3,
             "timeline_source": timeline_source,
+        },
+    }
+
+
+@router.get("/community")
+def trends_community(limit: int = Query(30, ge=1, le=100)):
+    """커뮤니티(네이버 카페 + 부동산 RSS) 트렌딩 키워드 전용 엔드포인트."""
+    items = fetch_community()
+
+    # 소스별 분류
+    cafe_items = [i for i in items if i.get("type") == "cafe"]
+    rss_items = [i for i in items if i.get("type") == "rss"]
+
+    # 커뮤니티 제목에서 명사 키워드 추출
+    noun_freq: dict[str, int] = Counter()
+    for item in items:
+        for noun in extract_nouns(item.get("title", "")):
+            noun_freq[noun] += 1
+
+    keyword_chart = [
+        {"keyword": k, "count": v}
+        for k, v in sorted(noun_freq.items(), key=lambda x: -x[1])[:20]
+    ]
+
+    return {
+        "total": len(items),
+        "cafe": cafe_items[:limit],
+        "rss": rss_items[:limit],
+        "keywords": [kc["keyword"] for kc in keyword_chart],
+        "charts": {
+            "keyword_frequency": keyword_chart,
+            "source_distribution": [
+                {"source": s, "count": c}
+                for s, c in Counter(i.get("source", "") for i in items).most_common()
+            ],
         },
     }

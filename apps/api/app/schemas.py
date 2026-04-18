@@ -59,16 +59,83 @@ class ScenarioInput(BaseModel):
     reference_points: list[str] = Field(default_factory=list)
     tone: str = "경제/부동산 해설형"
     keywords: list[str] = Field(default_factory=list)
+    selected_articles: list[dict] = Field(default_factory=list)
+    selected_videos: list[dict] = Field(default_factory=list)
+    target_duration_min: int = 10
+    target_duration_max: int = 12
+    session_id: str | None = None
 
 
 class ScenarioOutput(BaseModel):
     hook: str
+    hook_30s: str = ""
+    bridge_3min: str = ""
     body: list[str]
+    body_sections: list[dict] = Field(default_factory=list)
     conclusion: str
+    action_takeaways: list[str] = Field(default_factory=list)
     cta: str
     title_candidates: list[str]
     thumbnail_candidates: list[str]
     opening: str = ""
+    opening_title: str = ""
+    estimated_duration_min: int = 10
+
+
+# --- Research ---
+
+
+class ResearchSource(BaseModel):
+    type: Literal["article", "video", "unknown"] = "unknown"
+    title: str = ""
+    url: str = ""
+    summary: str = ""
+    keywords: list[str] = Field(default_factory=list)
+
+
+class ArticleCandidate(BaseModel):
+    id: str
+    title: str
+    source: str = ""
+    url: str = ""
+    published_at: str | None = None
+    summary: str = ""
+    keywords: list[str] = Field(default_factory=list)
+    related_score: float = 0.0
+    selected: bool = False
+
+
+class VideoCandidate(BaseModel):
+    id: str
+    youtube_video_id: str | None = None
+    title: str
+    channel: str = ""
+    url: str = ""
+    views: int = 0
+    published_at: str | None = None
+    relevance_score: float = 0.0
+    selected: bool = False
+
+
+class ResearchSessionCreate(BaseModel):
+    mode: Literal["url", "category"]
+    category: str | None = None
+    url: str | None = None
+
+
+class ResearchSessionResponse(BaseModel):
+    session_id: str
+    mode: str
+    category: str | None = None
+    source: ResearchSource
+    articles: list[ArticleCandidate] = Field(default_factory=list)
+    videos: list[VideoCandidate] = Field(default_factory=list)
+
+
+class ResearchExpandRequest(BaseModel):
+    session_id: str
+    article_ids: list[str] = Field(default_factory=list)
+    video_ids: list[str] = Field(default_factory=list)
 
 
 # --- Review ---

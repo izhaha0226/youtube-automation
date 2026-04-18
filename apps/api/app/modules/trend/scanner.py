@@ -1,4 +1,4 @@
-"""Trend and issue scanner. Sources: YouTube, Naver news, Google trends (fallback), internal performance.
+"""Trend and issue scanner. Sources: YouTube, Naver news, community, Google trends (fallback), internal performance.
 
 Aims for best-effort: if credentials are missing, returns empty lists without raising.
 """
@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 import feedparser
 import httpx
+from bs4 import BeautifulSoup
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -182,6 +183,94 @@ def fetch_news() -> list[dict]:
     return items
 
 
+def fetch_community() -> list[dict]:
+    """Scrape trending keywords from real-estate communities and RSS feeds.
+
+    Sources:
+      1. Naver 부동산 카페 인기글 (부동산스터디, 부동산114 등)
+      2. 부동산 뉴스 RSS (한국경제 부동산, 매일경제 부동산)
+    """
+    items: list[dict] = []
+
+    # --- 1. Naver cafe popular articles (mobile page, no login needed) ---
+    cafe_targets = [
+        {"name": "부동산스터디", "cafe_id": "jaegebal"},
+        {"name": "부동산114", "cafe_id": "land114"},
+        {"name": "월급쟁이부자들", "cafe_id": "wecando7"},
+    ]
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Linux; Android 13; SM-S908B) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Mobile Safari/537.36"
+        ),
+        "Accept-Language": "ko-KR,ko;q=0.9",
+    }
+    try:
+        with httpx.Client(timeout=12, follow_redirects=True) as client:
+            for cafe in cafe_targets:
+                try:
+                    url = f"https://m.cafe.naver.com/ca-fe/cafes/{cafe['cafe_id']}/articles?page=1&boardType=L"
+                    resp = client.get(url, headers=headers)
+                    if resp.status_code != 200:
+                        log.debug("community.cafe.skip", cafe=cafe["name"], status=resp.status_code)
+                        continue
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    # Mobile cafe list items
+                    for tag in soup.select("a.tit, a.article_title, h3.title_text, a[class*='article']"):
+                        title = tag.get_text(strip=True)
+                        if len(title) < 4:
+                            continue
+                        link = tag.get("href", "")
+                        if link and not link.startswith("http"):
+                            link = f"https://m.cafe.naver.com{link}"
+                        items.append({
+                            "title": title,
+                            "source": cafe["name"],
+                            "link": link,
+                            "type": "cafe",
+                        })
+                except Exception as e:
+                    log.debug("community.cafe.error", cafe=cafe["name"], error=str(e))
+    except Exception as e:
+        log.warning("community.cafe.client_error", error=str(e))
+
+    # --- 2. Real-estate news RSS feeds ---
+    rss_feeds = [
+        {"name": "한국경제 부동산", "url": "https://www.hankyung.com/feed/land"},
+        {"name": "매일경제 부동산", "url": "https://www.mk.co.kr/rss/realestate/"},
+        {"name": "조선비즈 부동산", "url": "https://biz.chosun.com/nsearch/rss/realestate.xml"},
+    ]
+    for feed_info in rss_feeds:
+        try:
+            feed = feedparser.parse(feed_info["url"])
+            for entry in feed.entries[:15]:
+                title = getattr(entry, "title", "")
+                if not title or len(title) < 4:
+                    continue
+                items.append({
+                    "title": _strip(title),
+                    "source": feed_info["name"],
+                    "link": getattr(entry, "link", ""),
+                    "pub": getattr(entry, "published", ""),
+                    "type": "rss",
+                })
+        except Exception as e:
+            log.debug("community.rss.error", feed=feed_info["name"], error=str(e))
+
+    # --- 3. Deduplicate by title similarity ---
+    seen: set[str] = set()
+    deduped: list[dict] = []
+    for item in items:
+        key = item["title"][:20]
+        if key not in seen:
+            seen.add(key)
+            deduped.append(item)
+
+    log.info("community.done", total=len(deduped), cafe=len([i for i in deduped if i.get("type") == "cafe"]), rss=len([i for i in deduped if i.get("type") == "rss"]))
+    return deduped
+
+
 def fetch_internal_performance() -> list[dict]:
     """Pull recent top-performing past videos for recurrence signals."""
     from sqlmodel import Session, select
@@ -212,13 +301,14 @@ def scan() -> TrendSnapshot:
     snap = TrendSnapshot(
         youtube=fetch_youtube_trending(),
         news=fetch_news(),
-        community=[],
+        community=fetch_community(),
         internal=fetch_internal_performance(),
     )
     log.info(
         "trend.scan.done",
         yt=len(snap.youtube),
         news=len(snap.news),
+        community=len(snap.community),
         internal=len(snap.internal),
     )
     return snap

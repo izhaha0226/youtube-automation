@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
 
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_not_exception_type, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -32,10 +33,17 @@ class LLMProvider:
         self.backup = backup or settings.backup_model
         self.temperature = temperature
 
-    @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=1, max=6))
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=6),
+        retry=retry_if_not_exception_type(LLMError),
+        reraise=True,
+    )
     def generate(self, system: str, user: str, *, json_mode: bool = False) -> str:
         try:
             return self._call(self.model, system, user, json_mode)
+        except LLMError:
+            raise
         except Exception as e:
             log.warning("llm.fallback", model=self.model, backup=self.backup, error=str(e))
             return self._call(self.backup, system, user, json_mode)
@@ -54,6 +62,8 @@ class LLMProvider:
     def _call(self, model: str, system: str, user: str, json_mode: bool) -> str:
         if model.startswith("claude"):
             return self._anthropic(model, system, user, json_mode)
+        if not shutil.which("codex"):
+            raise LLMError("codex CLI not installed – cannot use codex-based model")
         return self._codex(model, system, user, json_mode)
 
     def _codex(self, model: str, system: str, user: str, json_mode: bool) -> str:

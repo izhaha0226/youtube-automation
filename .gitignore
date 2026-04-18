@@ -11,8 +11,11 @@ dist/
 build/
 data/*.db
 data/*.sqlite
+apps/api/data/*.db
+apps/api/data/*.sqlite
 logs/*.log
 .DS_Store
+apps/web/tsconfig.tsbuildinfo
 .vercel
 .railway
 *.egg-info/
