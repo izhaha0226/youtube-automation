@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
+from itertools import combinations
 
 from fastapi import APIRouter, Query
 
@@ -13,7 +15,6 @@ from app.modules.trend.scanner import fetch_community, scan
 router = APIRouter()
 
 STOPWORDS = {
-    # 용언/부사/조사/접속사
     "있는", "하는", "되는", "있다", "없다", "한다", "된다", "했다", "됐다", "됩니다",
     "이렇게", "앞으로", "그래서", "하지만", "그러나", "그리고", "때문에", "하면서",
     "이번", "대한", "통해", "위한", "관련", "따른", "관한", "대해", "결국", "어떻게",
@@ -23,20 +24,66 @@ STOPWORDS = {
     "진짜", "정말", "매우", "많은", "모든", "각종", "다양한", "또한", "과연", "역시",
     "돼요", "해요", "있어", "없어", "합니다", "입니다", "습니다", "겠습", "보겠",
     "알아", "봤더", "봤습", "했습", "됐습", "다만", "만약", "여전", "그냥", "조금",
-    # 미디어/기능어/동사파편
     "기자", "뉴스", "보도", "속보", "영상", "전문가", "시청자", "오르고",
     "올라", "내려", "떨어", "나오는", "들어", "시작", "계속", "발생", "나온다",
     "연합뉴스", "한겨레", "중앙일보", "조선일보", "매일경제", "한국경제", "머니투데이",
     "the", "and", "for", "with", "from", "that", "this", "are", "was", "has",
-    "you", "the", "your", "how", "what", "why", "who", "which", "will",
+    "you", "your", "how", "what", "why", "who", "which", "will",
 }
 
-NOUN_PATTERN = re.compile(r"[가-힣]{2,6}|[A-Z]{2,}")
+NOUN_PATTERN = re.compile(r"[가-힣A-Z]{2,12}")
+PERIOD_MAP = {"today": 1, "3d": 3, "7d": 7, "30d": 30}
+
+KEYWORD_CLUSTERS: dict[str, list[str]] = {
+    "금리·대출": [
+        "금리", "기준금리", "대출", "주담대", "전세대출", "정책대출", "DSR", "LTV", "스트레스DSR", "연준",
+    ],
+    "아파트·공급": [
+        "아파트", "청약", "분양", "분양가상한제", "미분양", "입주물량", "재건축", "재개발", "공급부족", "매수심리",
+    ],
+    "전세·월세": [
+        "전세", "월세", "역전세", "전세사기", "보증금", "전세보증보험", "월세전환", "갭투자", "실거주", "임대차",
+    ],
+    "정책·세제": [
+        "규제", "완화", "세금", "양도세", "종부세", "취득세", "특별법", "장특공", "정부", "정책",
+    ],
+    "지역·교통": [
+        "서울", "강남", "잠실", "용산", "마포", "송파", "GTX", "반도체", "클러스터", "토지거래허가구역",
+    ],
+    "정치·선거": [
+        "여야", "대선", "지방선거", "공약", "민주당", "국민의힘", "의회", "법안", "선거", "정책대결",
+    ],
+}
+
+CLUSTER_BY_KEYWORD = {keyword: cluster for cluster, keywords in KEYWORD_CLUSTERS.items() for keyword in keywords}
+SUPPLEMENTAL_KEYWORDS = [kw for keywords in KEYWORD_CLUSTERS.values() for kw in keywords]
 
 
 def extract_nouns(text: str) -> list[str]:
     tokens = NOUN_PATTERN.findall(text)
-    return [t for t in tokens if t not in STOPWORDS]
+    return [token for token in tokens if token not in STOPWORDS]
+
+
+def parse_any_datetime(raw: str | None) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        pass
+    try:
+        dt = parsedate_to_datetime(raw)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+def format_basis(dt: datetime | None) -> str:
+    if not dt:
+        return "데이터 없음"
+    local = dt.astimezone(timezone.utc)
+    return local.strftime("%Y-%m-%d %H:%M UTC")
 
 
 def filter_by_period(items: list[dict], date_key: str, days: int | None) -> list[dict]:
@@ -45,20 +92,177 @@ def filter_by_period(items: list[dict], date_key: str, days: int | None) -> list
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     filtered = []
     for item in items:
-        raw = item.get(date_key, "")
-        if not raw:
-            filtered.append(item)
-            continue
-        try:
-            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-            if dt >= cutoff:
-                filtered.append(item)
-        except (ValueError, TypeError):
+        dt = parse_any_datetime(item.get(date_key))
+        if dt is None or dt >= cutoff:
             filtered.append(item)
     return filtered
 
 
-PERIOD_MAP = {"today": 1, "3d": 3, "7d": 7, "30d": 30}
+def infer_news_provider(item: dict) -> str:
+    provider = (item.get("provider") or "").lower()
+    if provider in {"naver", "google"}:
+        return provider
+    source = (item.get("source") or "").lower()
+    if "google" in source:
+        return "google"
+    return "naver"
+
+
+def make_documents(*groups: tuple[str, list[dict]]) -> list[dict]:
+    docs: list[dict] = []
+    for source_id, items in groups:
+        for item in items:
+            title = item.get("title", "")
+            keywords = list(dict.fromkeys(extract_nouns(title)))
+            docs.append({"source": source_id, "title": title, "keywords": keywords})
+    return docs
+
+
+def build_keyword_universe(noun_freq: Counter, docs: list[dict]) -> list[str]:
+    keywords = [keyword for keyword, _ in noun_freq.most_common(40)]
+    seen = set(keywords)
+
+    seed_hits = {kw for doc in docs for kw in doc["keywords"] if kw in CLUSTER_BY_KEYWORD}
+    for hit in list(seed_hits):
+        cluster = CLUSTER_BY_KEYWORD.get(hit)
+        if not cluster:
+            continue
+        for keyword in KEYWORD_CLUSTERS[cluster]:
+            if keyword not in seen:
+                keywords.append(keyword)
+                seen.add(keyword)
+
+    for keyword in SUPPLEMENTAL_KEYWORDS:
+        if len(keywords) >= 40:
+            break
+        if keyword not in seen:
+            keywords.append(keyword)
+            seen.add(keyword)
+
+    return keywords[:40]
+
+
+def build_keyword_map(docs: list[dict], keywords: list[str]) -> dict:
+    per_keyword_sources: dict[str, Counter] = {keyword: Counter() for keyword in keywords}
+    doc_sets: dict[str, set[int]] = {keyword: set() for keyword in keywords}
+
+    for idx, doc in enumerate(docs):
+        doc_keywords = set(doc["keywords"])
+        for keyword in keywords:
+            if keyword in doc_keywords:
+                per_keyword_sources[keyword][doc["source"]] += 1
+                doc_sets[keyword].add(idx)
+
+    keyword_rows = []
+    for keyword in keywords:
+        sources = per_keyword_sources[keyword]
+        total = sum(sources.values())
+        cluster = CLUSTER_BY_KEYWORD.get(keyword, "기타")
+        keyword_rows.append(
+            {
+                "keyword": keyword,
+                "count": total,
+                "sources": [source for source, count in sources.items() if count > 0],
+                "naver": sources.get("naver", 0),
+                "google": sources.get("google", 0),
+                "youtube": sources.get("youtube", 0),
+                "cluster": cluster,
+                "source_score": len([1 for count in sources.values() if count > 0]),
+            }
+        )
+
+    keyword_rows.sort(key=lambda row: (row["source_score"], row["count"], row["keyword"]), reverse=True)
+
+    correlation_rows = []
+    for source, target in combinations([row["keyword"] for row in keyword_rows], 2):
+        source_docs = doc_sets[source]
+        target_docs = doc_sets[target]
+        if not source_docs and not target_docs:
+            continue
+        union = source_docs | target_docs
+        if not union:
+            continue
+        intersection = source_docs & target_docs
+        cluster_bonus = 0.15 if CLUSTER_BY_KEYWORD.get(source) == CLUSTER_BY_KEYWORD.get(target) else 0.0
+        score = round(len(intersection) / len(union) + cluster_bonus, 3)
+        if score > 0:
+            correlation_rows.append(
+                {
+                    "source": source,
+                    "target": target,
+                    "score": score,
+                    "cluster": CLUSTER_BY_KEYWORD.get(source) if CLUSTER_BY_KEYWORD.get(source) == CLUSTER_BY_KEYWORD.get(target) else "교차",
+                }
+            )
+
+    if len(correlation_rows) < 10:
+        seen_pairs = {(row["source"], row["target"]) for row in correlation_rows}
+        for cluster, cluster_keywords in KEYWORD_CLUSTERS.items():
+            active_keywords = [keyword for keyword in cluster_keywords if keyword in {row["keyword"] for row in keyword_rows[:30]}]
+            for source, target in combinations(active_keywords[:6], 2):
+                pair = (source, target)
+                if pair in seen_pairs:
+                    continue
+                correlation_rows.append({"source": source, "target": target, "score": 0.25, "cluster": cluster})
+                seen_pairs.add(pair)
+                if len(correlation_rows) >= 12:
+                    break
+            if len(correlation_rows) >= 12:
+                break
+
+    correlation_rows.sort(key=lambda row: row["score"], reverse=True)
+
+    clusters = []
+    top_keywords = {row["keyword"] for row in keyword_rows[:30]}
+    for cluster, cluster_keywords in KEYWORD_CLUSTERS.items():
+        active = [keyword for keyword in cluster_keywords if keyword in top_keywords]
+        if active:
+            clusters.append({"name": cluster, "keywords": active[:8], "count": len(active)})
+
+    return {
+        "keywords": keyword_rows[:40],
+        "correlations": correlation_rows[:20],
+        "clusters": clusters[:6],
+    }
+
+
+def latest_basis(items: list[dict], key: str) -> str:
+    dates = [parse_any_datetime(item.get(key)) for item in items]
+    latest = max([dt for dt in dates if dt is not None], default=None)
+    return format_basis(latest)
+
+
+def build_source_sections(*, naver_news: list[dict], google_news: list[dict], youtube_items: list[dict], keyword_map: dict, timeline_source: str) -> list[dict]:
+    top_keyword_names = [row["keyword"] for row in keyword_map["keywords"]]
+    return [
+        {
+            "id": "naver",
+            "label": "네이버 트렌드",
+            "basis_label": "기준 날짜",
+            "basis_value": latest_basis(naver_news, "pub"),
+            "subtext": timeline_source or "네이버 뉴스/검색 기반",
+            "keywords": [keyword for keyword in top_keyword_names if any(row["keyword"] == keyword and row["naver"] > 0 for row in keyword_map["keywords"])][:12],
+            "items": naver_news[:8],
+        },
+        {
+            "id": "google",
+            "label": "구글 트렌드 시그널",
+            "basis_label": "기준 날짜",
+            "basis_value": latest_basis(google_news, "pub"),
+            "subtext": "Google News RSS 기반 이슈 시그널",
+            "keywords": [keyword for keyword in top_keyword_names if any(row["keyword"] == keyword and row["google"] > 0 for row in keyword_map["keywords"])][:12],
+            "items": google_news[:8],
+        },
+        {
+            "id": "youtube",
+            "label": "유튜브 트렌드",
+            "basis_label": "발행 기준",
+            "basis_value": latest_basis(youtube_items, "published"),
+            "subtext": "YouTube Data API 조회수/좋아요 기반",
+            "keywords": [keyword for keyword in top_keyword_names if any(row["keyword"] == keyword and row["youtube"] > 0 for row in keyword_map["keywords"])][:12],
+            "items": youtube_items[:8],
+        },
+    ]
 
 
 @router.get("")
@@ -77,19 +281,17 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
 
     yt_filtered = filter_by_period(snap.youtube, "published", days)
     news_filtered = filter_by_period(snap.news, "pub", days)
+    naver_news = [item for item in news_filtered if infer_news_provider(item) == "naver"]
+    google_news = [item for item in news_filtered if infer_news_provider(item) == "google"]
 
-    # 명사 키워드만 추출
-    all_titles = (
-        [x.get("title", "") for x in yt_filtered]
-        + [x.get("title", "") for x in news_filtered]
-        + [x.get("title", "") for x in snap.community]
-    )
-    noun_freq: dict[str, int] = Counter()
-    for t in all_titles:
-        for noun in extract_nouns(t):
-            noun_freq[noun] += 1
+    docs = make_documents(("naver", naver_news), ("google", google_news), ("youtube", yt_filtered), ("community", snap.community))
+    noun_freq: Counter = Counter()
+    for doc in docs:
+        for keyword in doc["keywords"]:
+            noun_freq[keyword] += 1
 
-    keyword_chart = [{"keyword": k, "count": v} for k, v in sorted(noun_freq.items(), key=lambda x: -x[1])[:20]]
+    keyword_universe = build_keyword_universe(noun_freq, docs)
+    keyword_chart = [{"keyword": keyword, "count": noun_freq.get(keyword, 0)} for keyword in keyword_universe[:30]]
 
     category_counts = [
         {"category": "경제 뉴스", "count": len([n for n in news_filtered if any(k in n.get("title", "") for k in ["금리", "경제", "CPI", "환율", "무역", "GDP"])])},
@@ -98,27 +300,16 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
         {"category": "글로벌", "count": len([n for n in news_filtered if any(k in n.get("title", "") for k in ["미국", "중국", "글로벌", "연준", "Fed", "달러"])])},
     ]
 
-    # Top 3 키워드의 30일 검색 트렌드
-    top3 = [kc["keyword"] for kc in keyword_chart[:3]]
-    timeline_data = fetch_search_trend(top3, days=30)
+    top3 = [item["keyword"] for item in keyword_chart[:3]]
+    timeline_data = fetch_search_trend(top3, days=30) if top3 else []
     timeline_source = "Naver DataLab 검색어 트렌드 API" if timeline_data else ""
 
-    # Naver DataLab 없으면 뉴스 발행일 기반 fallback
     if not timeline_data and top3:
-        all_items = snap.youtube + snap.news
         daily: dict[str, dict[str, int]] = {}
-        for item in all_items:
-            raw = item.get("published") or item.get("pub") or ""
-            if not raw:
+        for item in snap.youtube + snap.news:
+            dt = parse_any_datetime(item.get("published") or item.get("pub"))
+            if not dt:
                 continue
-            try:
-                dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-            except (ValueError, TypeError):
-                try:
-                    from email.utils import parsedate_to_datetime
-                    dt = parsedate_to_datetime(raw)
-                except Exception:
-                    continue
             day = dt.strftime("%m/%d")
             if day not in daily:
                 daily[day] = {kw: 0 for kw in top3}
@@ -135,8 +326,15 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
                 entry[kw] = daily.get(day, {}).get(kw, 0)
             timeline_data.append(entry)
         timeline_source = "뉴스/YouTube 언급 빈도 (fallback)"
-    else:
-        timeline_source = "Naver DataLab 검색어 트렌드 API"
+
+    keyword_map = build_keyword_map(docs, keyword_universe)
+    source_sections = build_source_sections(
+        naver_news=naver_news,
+        google_news=google_news,
+        youtube_items=yt_filtered,
+        keyword_map=keyword_map,
+        timeline_source=timeline_source,
+    )
 
     period_label = {"today": "오늘", "3d": "최근 3일", "7d": "최근 7일", "30d": "최근 30일", "custom": f"{start}~{end}"}
 
@@ -147,8 +345,10 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
         "news": news_filtered[:15],
         "community": snap.community[:5],
         "internal": snap.internal[:10],
-        "keywords": [kc["keyword"] for kc in keyword_chart[:20]],
+        "keywords": [row["keyword"] for row in keyword_map["keywords"][:30]],
         "benchmarks": benchmarks[:20],
+        "source_sections": source_sections,
+        "keyword_map": keyword_map,
         "charts": {
             "keyword_frequency": keyword_chart,
             "category_distribution": category_counts,
@@ -164,11 +364,9 @@ def trends_community(limit: int = Query(30, ge=1, le=100)):
     """커뮤니티(네이버 카페 + 부동산 RSS) 트렌딩 키워드 전용 엔드포인트."""
     items = fetch_community()
 
-    # 소스별 분류
     cafe_items = [i for i in items if i.get("type") == "cafe"]
     rss_items = [i for i in items if i.get("type") == "rss"]
 
-    # 커뮤니티 제목에서 명사 키워드 추출
     noun_freq: dict[str, int] = Counter()
     for item in items:
         for noun in extract_nouns(item.get("title", "")):

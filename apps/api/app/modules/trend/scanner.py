@@ -144,6 +144,7 @@ def fetch_news() -> list[dict]:
                                     "desc": _strip(it.get("description", "")),
                                     "pub": it.get("pubDate", ""),
                                     "source": source,
+                                    "provider": "naver",
                                     "query": q,
                                 }
                             )
@@ -176,6 +177,7 @@ def fetch_news() -> list[dict]:
                         "link": getattr(entry, "link", ""),
                         "pub": getattr(entry, "published", ""),
                         "source": source_name,
+                        "provider": "google",
                         "query": q,
                     }
                 )

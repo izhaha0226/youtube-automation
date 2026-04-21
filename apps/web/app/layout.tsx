@@ -28,51 +28,76 @@ function NavIcon({ d }: { d: string }) {
   );
 }
 
+function NavLinks({ items }: { items: typeof NAV_MAIN | typeof NAV_BOTTOM }) {
+  return (
+    <>
+      {items.map((n) => (
+        <Link
+          key={n.label}
+          href={n.href}
+          className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-navy lg:flex-col lg:gap-1.5 lg:px-2 lg:py-3"
+        >
+          <NavIcon d={n.icon} />
+          <span className="leading-tight lg:text-[11px]">{n.label}</span>
+        </Link>
+      ))}
+    </>
+  );
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body className="flex h-screen overflow-hidden">
-        <aside className="flex w-16 flex-col items-center border-r border-slate-200 bg-white py-4">
-          <div className="mb-6 flex h-9 w-9 items-center justify-center rounded-lg bg-navy text-sm font-bold text-white">R</div>
-          <nav className="flex flex-1 flex-col items-center gap-1">
-            {NAV_MAIN.map((n) => (
-              <Link key={n.label} href={n.href} className="flex w-full flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-slate-500 hover:bg-slate-50 hover:text-navy">
-                <NavIcon d={n.icon} />
-                <span className="text-[10px] leading-tight">{n.label}</span>
-              </Link>
-            ))}
-          </nav>
-          <div className="flex flex-col items-center gap-1 border-t border-slate-100 pt-3">
-            {NAV_BOTTOM.map((n) => (
-              <Link key={n.label} href={n.href} className="flex w-full flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-slate-400 hover:bg-slate-50 hover:text-navy">
-                <NavIcon d={n.icon} />
-                <span className="text-[10px] leading-tight">{n.label}</span>
-              </Link>
-            ))}
-          </div>
-        </aside>
-
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-            <h1 className="text-lg font-semibold">YouTube 자동화프로젝트</h1>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5">
-                <div className="h-6 w-6 rounded-full bg-navy" />
-                <span className="text-sm font-medium">리치고</span>
-                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                자율 실행
-              </div>
-              <button className="relative text-slate-400 hover:text-slate-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">1</span>
-              </button>
-              <div className="h-8 w-8 rounded-full bg-slate-300" />
+      <body className="min-h-screen bg-[#f5f7fb] text-slate-900">
+        <div className="flex min-h-screen">
+          <aside className="hidden w-[92px] flex-col border-r border-slate-200/80 bg-white/90 px-3 py-5 shadow-sm backdrop-blur lg:flex">
+            <div className="mb-8 flex h-11 w-11 items-center justify-center rounded-2xl bg-navy text-sm font-bold text-white shadow-sm">R</div>
+            <nav className="flex flex-1 flex-col gap-2">
+              <NavLinks items={NAV_MAIN} />
+            </nav>
+            <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4">
+              <NavLinks items={NAV_BOTTOM} />
             </div>
-          </header>
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          </aside>
+
+          <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+            <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/92 backdrop-blur">
+              <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-navy text-sm font-bold text-white shadow-sm lg:hidden">R</div>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Richgo Automation</p>
+                      <h1 className="truncate text-base font-semibold text-slate-900 sm:text-lg">YouTube 자동화 프로젝트</h1>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 sm:flex">
+                    <div className="h-6 w-6 rounded-full bg-navy" />
+                    리치고
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:text-sm">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    자율 실행
+                  </div>
+                  <div className="hidden h-9 w-9 rounded-full bg-slate-200 sm:block" />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto border-t border-slate-100 px-4 py-2 lg:hidden">
+                <nav className="flex w-max gap-2">
+                  <NavLinks items={NAV_MAIN} />
+                  <NavLinks items={NAV_BOTTOM} />
+                </nav>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+              <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+            </main>
+          </div>
         </div>
       </body>
     </html>

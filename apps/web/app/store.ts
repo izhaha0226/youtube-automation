@@ -1,4 +1,4 @@
-type TrendItem = { title: string; channel?: string; link?: string; pub?: string; query?: string; views?: number; published?: string; source?: string; url?: string; likes?: number; video_id?: string };
+type TrendItem = { title: string; channel?: string; link?: string; pub?: string; query?: string; views?: number; published?: string; source?: string; url?: string; likes?: number; video_id?: string; provider?: string };
 type BenchmarkVideo = { video_id: string; title: string; channel: string; published: string; views: number; likes: number; comments: number };
 type ChartData = {
   keyword_frequency: { keyword: string; count: number }[];
@@ -7,7 +7,43 @@ type ChartData = {
   top3_keywords: string[];
   timeline_source: string;
 };
-type TrendData = { period: string; period_label: string; youtube: TrendItem[]; news: TrendItem[]; keywords: string[]; benchmarks: BenchmarkVideo[]; charts: ChartData };
+type TrendSourceSection = {
+  id: "naver" | "google" | "youtube";
+  label: string;
+  basis_label: string;
+  basis_value: string;
+  subtext: string;
+  keywords: string[];
+  items: TrendItem[];
+};
+type TrendKeyword = {
+  keyword: string;
+  count: number;
+  sources: string[];
+  naver: number;
+  google: number;
+  youtube: number;
+  cluster: string;
+  source_score: number;
+};
+type TrendCorrelation = { source: string; target: string; score: number; cluster: string };
+type TrendCluster = { name: string; keywords: string[]; count: number };
+type TrendKeywordMap = {
+  keywords: TrendKeyword[];
+  correlations: TrendCorrelation[];
+  clusters: TrendCluster[];
+};
+type TrendData = {
+  period: string;
+  period_label: string;
+  youtube: TrendItem[];
+  news: TrendItem[];
+  keywords: string[];
+  benchmarks: BenchmarkVideo[];
+  charts: ChartData;
+  source_sections: TrendSourceSection[];
+  keyword_map: TrendKeywordMap;
+};
 
 type TopicCandidate = {
   title: string; reason: string;

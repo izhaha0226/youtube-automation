@@ -423,3 +423,45 @@ class TestMisc:
     def test_topics_get_not_allowed(self):
         resp = client.get("/topics")
         assert resp.status_code == 405
+
+
+class TestTrends:
+    @patch("app.routes.trends.fetch_search_trend")
+    @patch("app.routes.trends.fetch_all_benchmarks")
+    @patch("app.routes.trends.scan")
+    def test_trends_returns_split_sources_and_keyword_relationships(self, mock_scan, mock_benchmarks, mock_search_trend):
+        mock_scan.return_value = MagicMock(
+            youtube=[
+                {"title": "서울 아파트 매수심리 반등 전세 대출 금리", "channel": "채널A", "query": "부동산", "published": "2026-04-21T10:00:00Z", "views": 10000, "likes": 100, "url": "https://youtube.com/watch?v=1"},
+                {"title": "재건축 안전진단 규제 완화와 강남 집값", "channel": "채널B", "query": "집값", "published": "2026-04-20T10:00:00Z", "views": 9000, "likes": 90, "url": "https://youtube.com/watch?v=2"},
+            ],
+            news=[
+                {"title": "서울 아파트 전세 대출 DSR 규제 완화 논쟁", "link": "https://news/1", "pub": "Tue, 21 Apr 2026 16:40:00 +0900", "source": "naver-news", "query": "부동산"},
+                {"title": "분양가 상한제와 재건축 초과이익환수제 충돌", "link": "https://news/2", "pub": "Tue, 21 Apr 2026 14:10:00 +0900", "source": "google-news", "query": "정책"},
+                {"title": "월세 상승과 전세사기 특별법 개정 이슈", "link": "https://news/3", "pub": "Tue, 21 Apr 2026 11:10:00 +0900", "source": "google-news", "query": "전세"},
+            ],
+            community=[
+                {"title": "용인 반도체 클러스터 GTX 분양권 투자 전략", "source": "부동산스터디", "type": "cafe"},
+                {"title": "토지거래허가구역 해제 후 잠실 매매 호가", "source": "월급쟁이부자들", "type": "cafe"},
+            ],
+            internal=[],
+        )
+        mock_benchmarks.return_value = []
+        mock_search_trend.return_value = [
+            {"date": "04/19", "서울": 55.0, "아파트": 62.0, "전세": 41.0},
+            {"date": "04/20", "서울": 58.0, "아파트": 66.0, "전세": 45.0},
+            {"date": "04/21", "서울": 61.0, "아파트": 71.0, "전세": 47.0},
+        ]
+
+        resp = client.get("/trends?period=7d")
+        assert resp.status_code == 200
+        body = resp.json()
+
+        assert len(body["source_sections"]) == 3
+        assert [section["id"] for section in body["source_sections"]] == ["naver", "google", "youtube"]
+        assert body["source_sections"][0]["basis_label"]
+        assert len(body["keyword_map"]["keywords"]) >= 30
+        assert len(body["keyword_map"]["correlations"]) >= 10
+        assert len(body["keyword_map"]["clusters"]) >= 3
+        assert body["keyword_map"]["keywords"][0]["sources"]
+        assert body["charts"]["keyword_frequency"][0]["keyword"]
