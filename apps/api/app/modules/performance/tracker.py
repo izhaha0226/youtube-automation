@@ -16,12 +16,13 @@ log = get_logger(__name__)
 
 def fetch_latest() -> dict:
     """Fetch recent video stats via YouTube Data API v3 (public statistics)."""
-    if not settings.google_api_key or not settings.youtube_channel_id:
+    api_key = settings.effective_youtube_api_key
+    if not api_key or not settings.youtube_channel_id:
         return {"ok": False, "reason": "missing api key or channel id"}
     try:
         from googleapiclient.discovery import build
 
-        yt = build("youtube", "v3", developerKey=settings.google_api_key)
+        yt = build("youtube", "v3", developerKey=api_key)
         search = (
             yt.search()
             .list(

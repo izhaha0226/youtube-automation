@@ -57,13 +57,14 @@ class TrendSnapshot:
 
 
 def fetch_youtube_trending(channel_id: str | None = None) -> list[dict]:
-    if not settings.google_api_key:
-        log.info("trend.youtube.skip", reason="no GOOGLE_API_KEY")
+    api_key = settings.effective_youtube_api_key
+    if not api_key:
+        log.info("trend.youtube.skip", reason="no GOOGLE_API_KEY or YOUTUBE_API_KEY")
         return []
     try:
         from googleapiclient.discovery import build
 
-        yt = build("youtube", "v3", developerKey=settings.google_api_key)
+        yt = build("youtube", "v3", developerKey=api_key)
         items: list[dict] = []
         video_ids: list[str] = []
         id_to_item: dict[str, dict] = {}

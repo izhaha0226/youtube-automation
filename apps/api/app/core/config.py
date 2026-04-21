@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     naver_client_id: str | None = None
     naver_client_secret: str | None = None
     google_api_key: str | None = None
+    youtube_api_key: str | None = None
+
+    @property
+    def effective_youtube_api_key(self) -> str | None:
+        return self.youtube_api_key or self.google_api_key
 
     # DB
     database_url: str = f"sqlite:///{DATA_DIR}/youtube.db"

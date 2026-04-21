@@ -12,12 +12,13 @@ log = get_logger(__name__)
 
 
 def fetch_channel_top_videos(channel_id: str, channel_name: str, max_results: int = 10) -> list[dict]:
-    if not settings.google_api_key or not channel_id:
+    api_key = settings.effective_youtube_api_key
+    if not api_key or not channel_id:
         return []
     try:
         from googleapiclient.discovery import build
 
-        yt = build("youtube", "v3", developerKey=settings.google_api_key)
+        yt = build("youtube", "v3", developerKey=api_key)
 
         search_resp = yt.search().list(
             channelId=channel_id,
