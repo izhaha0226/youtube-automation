@@ -16,6 +16,12 @@
 - 목표 길이: {{target_duration_min}}~{{target_duration_max}}분
 - 세션 ID: {{session_id}}
 
+## 김기원 대표 철학
+{{kim_kiwon_philosophy}}
+
+## 리치고TV 편집 원칙
+{{editorial_rules}}
+
 ## 리치고TV 스크립트 원칙
 1. 시청자는 "뉴스를 아는 것"보다 "지금 어떻게 해석해야 하는지"를 원한다.
 2. 첫 30초는 결론을 미끼처럼 숨기지 말고 핵심 신호를 던져라.

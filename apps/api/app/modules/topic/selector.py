@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.llm import llm
 from app.core.logging import get_logger
 from app.core.prompts import load_prompt, render
+from app.modules.richgo.editorial import editorial_rules_context, philosophy_context
 from app.modules.trend.scanner import scan  # used as fallback when no pre-fetched data
 from app.schemas import TopicCandidate, TopicInput, TopicResult, TopicScore
 
@@ -35,6 +36,8 @@ def select_topic(payload: TopicInput) -> TopicResult:
         trend_keywords=", ".join(trend_keywords[:30]) or "(없음)",
         source_mode=("research-backed" if payload.current_issues or payload.trend_keywords else "trend-scan"),
         target_speed="오늘 바로 촬영 가능한 주제를 우선",
+        kim_kiwon_philosophy=philosophy_context(),
+        editorial_rules=editorial_rules_context(),
     )
     data = llm(temperature=0.5).generate_json(system=system, user=user)
 

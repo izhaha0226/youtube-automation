@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 
 from app.core.db import engine
 from app.models import ScenarioWorkspace
+from app.modules.sync.obsidian import export_workspace_package
 from app.schemas import NarrationOutput, ReviewOutput, ScenarioInput, ScenarioOutput, SubtitleOutput, ThumbnailOutput, UploadMeta
 
 
@@ -57,10 +58,12 @@ def save_scenario_workspace(payload: ScenarioInput, scenario: ScenarioOutput) ->
             s.add(existing)
             s.commit()
             s.refresh(existing)
+            export_workspace_package(existing)
             return existing
         s.add(workspace)
         s.commit()
         s.refresh(workspace)
+        export_workspace_package(workspace)
         return workspace
 
 
@@ -90,6 +93,7 @@ def save_workspace_review(session_id: str, review: ReviewOutput) -> ScenarioWork
         s.add(row)
         s.commit()
         s.refresh(row)
+        export_workspace_package(row)
         return row
 
 
@@ -110,6 +114,7 @@ def save_workspace_narration(session_id: str, narration: NarrationOutput) -> Sce
         s.add(row)
         s.commit()
         s.refresh(row)
+        export_workspace_package(row)
         return row
 
 
@@ -130,6 +135,7 @@ def save_workspace_subtitles(session_id: str, subtitles: list[SubtitleOutput]) -
         s.add(row)
         s.commit()
         s.refresh(row)
+        export_workspace_package(row)
         return row
 
 
@@ -150,6 +156,7 @@ def save_workspace_thumbnail(session_id: str, thumbnail: ThumbnailOutput) -> Sce
         s.add(row)
         s.commit()
         s.refresh(row)
+        export_workspace_package(row)
         return row
 
 

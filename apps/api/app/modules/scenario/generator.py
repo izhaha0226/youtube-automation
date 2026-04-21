@@ -5,6 +5,7 @@ import json
 from app.core.llm import llm
 from app.core.logging import get_logger
 from app.core.prompts import load_prompt, render
+from app.modules.richgo.editorial import editorial_rules_context, philosophy_context
 from app.schemas import ScenarioInput, ScenarioOutput
 
 log = get_logger(__name__)
@@ -27,6 +28,8 @@ def generate_scenario(payload: ScenarioInput) -> ScenarioOutput:
         target_duration_min=payload.target_duration_min,
         target_duration_max=payload.target_duration_max,
         session_id=payload.session_id or "(없음)",
+        kim_kiwon_philosophy=philosophy_context(),
+        editorial_rules=editorial_rules_context(),
     )
     data = llm(temperature=0.6).generate_json(system=system, user=user)
     out = ScenarioOutput(
