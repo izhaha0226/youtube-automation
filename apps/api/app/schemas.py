@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+ContentArchetype = Literal["경고형", "판단형", "기회형", "구조해설형", "원칙형"]
+
 # --- Topic ---
 
 
@@ -39,6 +41,7 @@ class TopicCandidate(BaseModel):
     title: str
     reason: str
     score: TopicScore
+    archetype: ContentArchetype = "판단형"
     risk: str = ""
     keywords: list[str] = Field(default_factory=list)
 
@@ -47,6 +50,7 @@ class TopicResult(BaseModel):
     recommended_topics: list[TopicCandidate]
     selected_topic: str
     selected_reason: str
+    selected_archetype: ContentArchetype = "판단형"
     next_step: Literal["scenario"] = "scenario"
 
 
@@ -56,6 +60,7 @@ class TopicResult(BaseModel):
 class ScenarioInput(BaseModel):
     topic: str
     channel: str = "리치고"
+    archetype: ContentArchetype = "판단형"
     reference_points: list[str] = Field(default_factory=list)
     tone: str = "경제/부동산 해설형"
     keywords: list[str] = Field(default_factory=list)
@@ -70,6 +75,7 @@ class ScenarioOutput(BaseModel):
     hook: str
     hook_30s: str = ""
     bridge_3min: str = ""
+    archetype: ContentArchetype = "판단형"
     body: list[str]
     body_sections: list[dict] = Field(default_factory=list)
     conclusion: str

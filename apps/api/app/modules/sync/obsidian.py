@@ -38,6 +38,7 @@ def export_workspace_package(row: ScenarioWorkspace) -> tuple[Path, Path]:
     narration = snapshot.get("narration") or {}
     subtitles = snapshot.get("subtitles") or []
     thumbnail = snapshot.get("thumbnail") or {}
+    upload_meta = snapshot.get("upload_meta") or {}
     articles = snapshot.get("articles") or []
     videos = snapshot.get("videos") or []
     keywords = snapshot.get("keywords") or []
@@ -49,6 +50,7 @@ def export_workspace_package(row: ScenarioWorkspace) -> tuple[Path, Path]:
         narration=narration,
         subtitles=subtitles,
         thumbnail=thumbnail,
+        upload_meta=upload_meta,
         articles=articles,
         videos=videos,
         keywords=keywords,
@@ -83,6 +85,7 @@ def _workspace_markdown(
     narration: dict,
     subtitles: list[dict],
     thumbnail: dict,
+    upload_meta: dict,
     articles: list[dict],
     videos: list[dict],
     keywords: list[str],
@@ -161,6 +164,10 @@ def _workspace_markdown(
         lines.append(f"- 썸네일 결과: {thumbnail.get('final_image', '(없음)')}")
     else:
         lines.append("- 썸네일 없음")
+    if upload_meta:
+        lines.append(f"- 업로드 메타 제목: {upload_meta.get('title', '(없음)')}")
+    else:
+        lines.append("- 업로드 메타 없음")
 
     lines += ["", "## 🧭 액션 포인트"]
     takeaways = scenario.get('action_takeaways') or []

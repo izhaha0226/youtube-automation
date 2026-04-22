@@ -206,13 +206,14 @@ export default function Home() {
     finally { setLoadingTopic(false); }
   }
 
-  async function selectTopic(topic: string) {
+  async function selectTopic(topic: string, archetype?: TopicCandidate["archetype"]) {
     setSelectedTopic(topic); setLoadingScenario(true); setError(null);
     try {
       const r = await fetch("/api/scenarios", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic,
+          archetype: archetype ?? topics?.selected_archetype ?? "판단형",
           keywords: mustTags,
           selected_articles: research?.articles.filter((a) => selectedArticleIds.includes(a.id)) ?? [],
           selected_videos: research?.videos.filter((v) => selectedVideoIds.includes(v.id)) ?? [],
@@ -732,15 +733,24 @@ export default function Home() {
               const score = totalScore(t.score);
               const isSel = selectedTopic === t.title;
               return (
-                <div key={i} className={`rounded-xl border p-3 ${isSel ? "border-navy bg-blue-50" : "border-slate-200 hover:border-slate-300"}`}>
+                <button
+                  key={i}
+                  onClick={() => selectTopic(t.title, t.archetype)}
+                  className={`w-full rounded-2xl border p-4 text-left transition ${isSel ? "border-navy bg-blue-50" : "border-slate-200 bg-white hover:border-blue-200"}`}
+                >
                   <div className="text-[10px] font-semibold text-slate-400">Topic {i + 1}</div>
                   <h3 className="mt-0.5 text-xs font-bold leading-snug text-navy">{t.title}</h3>
                   <div className="mt-1 text-base font-bold text-navy">Score: {score}점</div>
                   <p className="mt-1 line-clamp-2 text-[10px] text-slate-500">{t.reason}</p>
-                  <button onClick={() => selectTopic(t.title)} disabled={loadingScenario} className={`mt-2 w-full rounded-lg py-1.5 text-xs font-semibold ${isSel ? "bg-navy text-white" : "border border-slate-300 text-slate-600 hover:bg-slate-50"} disabled:opacity-40`}>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5">총점 {score}</span>
+                    {t.archetype && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">{t.archetype}</span>}
+                    {t.keywords.slice(0, 3).map((k) => <span key={k} className="rounded-full bg-slate-100 px-2 py-0.5">#{k}</span>)}
+                  </div>
+                  <div className={`mt-3 inline-flex rounded-lg px-3 py-1.5 text-xs font-semibold ${isSel ? "bg-navy text-white" : "border border-slate-300 text-slate-600"}`}>
                     {isSel ? "선택됨" : "선택하기"}
-                  </button>
-                </div>
+                  </div>
+                </button>
               );
             })}
           </div>
@@ -761,6 +771,7 @@ export default function Home() {
                 전체 워크스페이스 열기
               </a>
             )}
+            {scenario?.archetype && <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{scenario.archetype}</span>}
             {scenario?.estimated_duration_min && <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">예상 길이 {scenario.estimated_duration_min}분</span>}
           </div>
         </div>

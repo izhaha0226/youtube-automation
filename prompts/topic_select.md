@@ -20,6 +20,12 @@
 ## 리치고TV 편집 원칙
 {{editorial_rules}}
 
+## Archetype 선택
+- Content Archetype: {{content_archetype_guide}}
+- 이번 추천에서 각 후보마다 정확히 1개의 archetype을 붙여라.
+- archetype 후보는 다음 5개만 허용한다: `경고형`, `판단형`, `기회형`, `구조해설형`, `원칙형`
+- selected_archetype은 selected_topic과 반드시 일치해야 한다.
+
 ## 리치고TV 판단 원칙
 1. 단순 뉴스 요약 금지. 시청자가 "그래서 내 돈, 내 집, 내 지역에 무슨 영향이 있는데?"를 바로 느껴야 한다.
 2. 추상적인 거시경제보다는 체감 신호가 살아있는 주제를 우선한다.
@@ -77,10 +83,12 @@ JSON만 출력:
         "discussion": 0
       },
       "risk": "다룰 때 주의할 오해/한계",
+      "archetype": "경고형 | 판단형 | 기회형 | 구조해설형 | 원칙형",
       "keywords": ["핵심 키워드", "검색 키워드"]
     }
   ],
   "selected_topic": "최종 권장 주제",
-  "selected_reason": "지금 이걸 먼저 찍어야 하는 이유"
+  "selected_reason": "지금 이걸 먼저 찍어야 하는 이유",
+  "selected_archetype": "선택된 주제의 archetype"
 }
 ```

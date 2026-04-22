@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.llm import llm
 from app.core.logging import get_logger
 from app.core.prompts import load_prompt, render
-from app.modules.richgo.editorial import editorial_rules_context, philosophy_context
+from app.modules.richgo.editorial import content_archetype_context, editorial_rules_context, philosophy_context
 from app.modules.trend.scanner import scan  # used as fallback when no pre-fetched data
 from app.schemas import TopicCandidate, TopicInput, TopicResult, TopicScore
 
@@ -38,6 +38,7 @@ def select_topic(payload: TopicInput) -> TopicResult:
         target_speed="오늘 바로 촬영 가능한 주제를 우선",
         kim_kiwon_philosophy=philosophy_context(),
         editorial_rules=editorial_rules_context(),
+        content_archetype_guide=content_archetype_context(),
     )
     data = llm(temperature=0.5).generate_json(system=system, user=user)
 
@@ -55,6 +56,7 @@ def select_topic(payload: TopicInput) -> TopicResult:
                 title=c.get("title", ""),
                 reason=c.get("reason", ""),
                 score=score,
+                archetype=c.get("archetype", "판단형"),
                 risk=c.get("risk", ""),
                 keywords=c.get("keywords", []),
             )
@@ -64,11 +66,13 @@ def select_topic(payload: TopicInput) -> TopicResult:
 
     selected = data.get("selected_topic") or (candidates[0].title if candidates else "")
     reason = data.get("selected_reason") or (candidates[0].reason if candidates else "")
+    selected_archetype = data.get("selected_archetype") or (candidates[0].archetype if candidates else "판단형")
 
     result = TopicResult(
         recommended_topics=candidates,
         selected_topic=selected,
         selected_reason=reason,
+        selected_archetype=selected_archetype,
     )
     log.info("topic.select.done", count=len(candidates), selected=selected)
     return result

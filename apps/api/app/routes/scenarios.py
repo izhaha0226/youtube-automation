@@ -15,11 +15,13 @@ from app.modules.scenario.workspace import (
     save_workspace_review,
     save_workspace_subtitles,
     save_workspace_thumbnail,
+    save_workspace_upload_meta,
     scenario_from_workspace,
     scenario_input_from_workspace,
 )
 from app.modules.subtitle.subtitler import generate_subtitles
 from app.modules.thumbnail.generator import generate_thumbnail
+from app.modules.upload.meta import build_upload_meta
 from app.schemas import (
     NarrationInput,
     NarrationOutput,
@@ -30,6 +32,7 @@ from app.schemas import (
     SubtitleOutput,
     ThumbnailInput,
     ThumbnailOutput,
+    UploadMeta,
 )
 
 log = get_logger(__name__)
@@ -77,6 +80,7 @@ def scenario_workspace_get(session_id: str):
         "narration": snapshot.get("narration"),
         "subtitles": snapshot.get("subtitles"),
         "thumbnail": snapshot.get("thumbnail"),
+        "upload_meta": snapshot.get("upload_meta"),
         "status": row.status,
         "created_at": row.created_at.isoformat(),
         "updated_at": row.updated_at.isoformat(),
@@ -153,6 +157,20 @@ def scenario_workspace_thumbnail(session_id: str) -> ThumbnailOutput:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/workspace/{session_id}/upload-meta", response_model=UploadMeta)
+def scenario_workspace_upload_meta(session_id: str) -> UploadMeta:
+    try:
+        return upload_meta_workspace(session_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except LLMError as e:
+        log.error("scenarios.workspace_upload_meta.llm_error", error=str(e), session_id=session_id)
+        raise HTTPException(status_code=503, detail=f"LLM service unavailable: {e}")
+    except Exception as e:
+        log.error("scenarios.workspace_upload_meta.unexpected_error", error=str(e), session_id=session_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 def review_workspace(session_id: str) -> ReviewOutput:
     row = get_workspace_by_session(session_id)
     if not row:
@@ -217,3 +235,13 @@ def thumbnail_workspace(session_id: str) -> ThumbnailOutput:
     )
     save_workspace_thumbnail(session_id, thumbnail)
     return thumbnail
+
+
+def upload_meta_workspace(session_id: str) -> UploadMeta:
+    row = get_workspace_by_session(session_id)
+    if not row:
+        raise ValueError("Workspace not found")
+    scenario = scenario_from_workspace(row)
+    upload_meta = build_upload_meta(session_id, row.selected_topic, scenario)
+    save_workspace_upload_meta(session_id, upload_meta)
+    return upload_meta

@@ -160,12 +160,34 @@ def save_workspace_thumbnail(session_id: str, thumbnail: ThumbnailOutput) -> Sce
         return row
 
 
+def save_workspace_upload_meta(session_id: str, upload_meta: UploadMeta) -> ScenarioWorkspace | None:
+    with Session(engine) as s:
+        row = s.exec(
+            select(ScenarioWorkspace)
+            .where(ScenarioWorkspace.session_id == session_id)
+            .order_by(ScenarioWorkspace.created_at.desc())
+        ).first()
+        if not row:
+            return None
+        snapshot = row.references_snapshot or {}
+        snapshot["upload_meta"] = upload_meta.model_dump()
+        row.references_snapshot = snapshot
+        row.status = "meta_ready"
+        row.updated_at = datetime.utcnow()
+        s.add(row)
+        s.commit()
+        s.refresh(row)
+        export_workspace_package(row)
+        return row
+
+
 def scenario_from_workspace(row: ScenarioWorkspace) -> ScenarioOutput:
     snapshot = row.references_snapshot or {}
     data = snapshot.get("scenario") or {
         "hook": row.hook_30s,
         "hook_30s": row.hook_30s,
         "bridge_3min": row.bridge_3min,
+        "archetype": "판단형",
         "body": [],
         "body_sections": row.body_sections,
         "conclusion": "",
@@ -182,8 +204,10 @@ def scenario_from_workspace(row: ScenarioWorkspace) -> ScenarioOutput:
 
 def scenario_input_from_workspace(row: ScenarioWorkspace, reference_points: list[str] | None = None) -> ScenarioInput:
     snapshot = row.references_snapshot or {}
+    scenario = snapshot.get("scenario") or {}
     return ScenarioInput(
         topic=row.selected_topic,
+        archetype=scenario.get("archetype", "판단형"),
         keywords=snapshot.get("keywords", []),
         selected_articles=snapshot.get("articles", []),
         selected_videos=snapshot.get("videos", []),

@@ -2,6 +2,7 @@ import WorkspaceNarrationAction from "./workspace-narration-action";
 import WorkspaceReviewAction from "./workspace-review-action";
 import WorkspaceSubtitleAction from "./workspace-subtitle-action";
 import WorkspaceThumbnailAction from "./workspace-thumbnail-action";
+import WorkspaceUploadMetaAction from "./workspace-upload-meta-action";
 
 type WorkspaceResponse = {
   id: string;
@@ -15,6 +16,7 @@ type WorkspaceResponse = {
     hook?: string;
     hook_30s?: string;
     bridge_3min?: string;
+    archetype?: "경고형" | "판단형" | "기회형" | "구조해설형" | "원칙형";
     body?: string[];
     body_sections?: { heading: string; script: string; summary?: string; viewer_takeaway?: string }[];
     conclusion?: string;
@@ -47,6 +49,13 @@ type WorkspaceResponse = {
     final_image: string;
     overlay_used: boolean;
     save_path: string;
+  } | null;
+  upload_meta?: {
+    title: string;
+    description: string;
+    tags: string[];
+    hashtags: string[];
+    pinned_comment: string;
   } | null;
   status: string;
   updated_at: string;
@@ -131,7 +140,10 @@ export default async function WorkspacePage({ params }: { params: Promise<{ sess
         <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">시나리오</h2>
-            <span className="rounded bg-slate-100 px-2.5 py-1 text-xs text-slate-500">예상 {scenario.estimated_duration_min ?? workspace.target_duration_min}분</span>
+            <div className="flex items-center gap-2">
+              {scenario.archetype && <span className="rounded bg-amber-50 px-2.5 py-1 text-xs text-amber-700">{scenario.archetype}</span>}
+              <span className="rounded bg-slate-100 px-2.5 py-1 text-xs text-slate-500">예상 {scenario.estimated_duration_min ?? workspace.target_duration_min}분</span>
+            </div>
           </div>
 
           {scenario.opening_title && (
@@ -196,6 +208,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ sess
           <WorkspaceNarrationAction sessionId={session_id} initialNarration={workspace.narration ?? null} />
           <WorkspaceSubtitleAction sessionId={session_id} initialSubtitles={workspace.subtitles ?? []} />
           <WorkspaceThumbnailAction sessionId={session_id} initialThumbnail={workspace.thumbnail ?? null} />
+          <WorkspaceUploadMetaAction sessionId={session_id} initialUploadMeta={workspace.upload_meta ?? null} />
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-900">선택 근거</h3>

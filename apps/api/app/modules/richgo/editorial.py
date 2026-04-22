@@ -16,6 +16,14 @@ RICHGO_EDITORIAL_RULES: tuple[str, ...] = (
     "겉보기 화려함보다 본질, 지속성, 실행 가능한 포인트를 중시한다.",
 )
 
+CONTENT_ARCHETYPE_GUIDE: tuple[str, ...] = (
+    "경고형: 위험 신호, 착시 깨기, 지금 피해야 할 함정에 집중",
+    "판단형: 지금 체크해야 할 숫자와 의사결정 기준 제시",
+    "기회형: 다수가 놓친 기회, 저평가, 선별 포인트 강조",
+    "구조해설형: 거시경제·정책·기술 변화를 부동산 언어로 번역",
+    "원칙형: 김기원 대표 철학, 장기전, 태도, 기준을 전면에 배치",
+)
+
 
 def philosophy_context() -> str:
     return "\n".join(f"- {item}" for item in KIM_KIWON_PRINCIPLES)
@@ -23,3 +31,7 @@ def philosophy_context() -> str:
 
 def editorial_rules_context() -> str:
     return "\n".join(f"- {item}" for item in RICHGO_EDITORIAL_RULES)
+
+
+def content_archetype_context() -> str:
+    return "\n".join(f"- {item}" for item in CONTENT_ARCHETYPE_GUIDE)

@@ -48,14 +48,16 @@ type TrendData = {
 type TopicCandidate = {
   title: string; reason: string;
   score: { popularity: number; economy: number; realestate: number; virality: number; richgo_fit: number; discussion: number };
+  archetype?: "경고형" | "판단형" | "기회형" | "구조해설형" | "원칙형";
   keywords: string[];
 };
-type TopicResult = { recommended_topics: TopicCandidate[]; selected_topic: string; selected_reason: string };
+type TopicResult = { recommended_topics: TopicCandidate[]; selected_topic: string; selected_reason: string; selected_archetype?: TopicCandidate["archetype"] };
 type ScenarioSection = { heading: string; script: string };
 type ScenarioOutput = {
   hook: string;
   hook_30s?: string;
   bridge_3min?: string;
+  archetype?: "경고형" | "판단형" | "기회형" | "구조해설형" | "원칙형";
   body: string[];
   body_sections?: ScenarioSection[];
   conclusion: string;
