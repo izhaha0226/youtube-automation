@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from app.core.db import engine
 from app.models import ArticleRecord, ResearchSession, VideoReferenceRecord
-from app.modules.research.service import create_from_category, create_from_url, expand_session
+from app.modules.research.service import create_from_category, create_from_trend_selection, create_from_url, expand_session
 from app.schemas import ResearchExpandRequest, ResearchSessionCreate, ResearchSessionResponse, ResearchSource
 
 router = APIRouter()
@@ -17,6 +17,10 @@ def research_create(payload: ResearchSessionCreate) -> ResearchSessionResponse:
         if not payload.url:
             raise HTTPException(422, "url is required for url mode")
         return create_from_url(payload.url, payload.category)
+    if payload.mode == "trend":
+        if not payload.selected_articles:
+            raise HTTPException(422, "selected_articles is required for trend mode")
+        return create_from_trend_selection(payload.selected_articles, payload.trend_keywords, payload.category)
     if not payload.category:
         raise HTTPException(422, "category is required for category mode")
     return create_from_category(payload.category)

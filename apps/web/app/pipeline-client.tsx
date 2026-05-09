@@ -62,6 +62,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
   const [scenario, setScenario] = useState<ScenarioOutput | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedTopicArchetype, setSelectedTopicArchetype] = useState<TopicCandidate["archetype"] | null>(null);
   const [loadingScenario, setLoadingScenario] = useState(false);
 
   const [researchMode, setResearchMode] = useState<"url" | "category">("category");
@@ -84,6 +85,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       setMustTags(saved.mustTags);
       setTopics(saved.topics);
       setSelectedTopic(saved.selectedTopic);
+      setSelectedTopicArchetype(saved.selectedTopicArchetype ?? null);
       setScenario(saved.scenario);
       setPeriod(saved.period);
       setResearchMode(saved.researchMode ?? "category");
@@ -104,6 +106,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           .then((data) => {
             if (data) {
               setSelectedTopic(data.selected_topic);
+              setSelectedTopicArchetype(data.scenario?.archetype ?? null);
               setSelectedArticleIds(data.selected_article_ids ?? []);
               setSelectedVideoIds(data.selected_video_ids ?? []);
               setScenario(data.scenario ?? null);
@@ -116,8 +119,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
   // 상태 변경 시 자동 저장
   useEffect(() => {
-    saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds });
-  }, [trends, selectedIssues, intent, mustTags, topics, selectedTopic, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds]);
+    saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds });
+  }, [trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds]);
 
   async function scanTrends() {
     setLoadingTrend(true);
@@ -145,9 +148,11 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     setLoadingResearch(true);
     setError(null);
     try {
-      const payload = researchMode === "url"
-        ? { mode: "url", url: researchUrl, category: researchCategory }
-        : { mode: "category", category: researchCategory };
+      const payload = selectedIssues.length > 0
+        ? { mode: "trend", category: researchCategory, selected_articles: selectedIssues, trend_keywords: trends?.keywords.slice(0, 20) ?? [] }
+        : researchMode === "url"
+          ? { mode: "url", url: researchUrl, category: researchCategory }
+          : { mode: "category", category: researchCategory };
       const r = await fetch("/api/research/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -213,18 +218,27 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       });
       if (!r.ok) throw new Error(`Topic API: ${r.status}`);
       setTopics(await r.json());
+      setSelectedTopic(null);
+      setSelectedTopicArchetype(null);
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingTopic(false); }
   }
 
-  async function selectTopic(topic: string, archetype?: TopicCandidate["archetype"]) {
-    setSelectedTopic(topic); setLoadingScenario(true); setError(null);
+  function selectTopic(topic: string, archetype?: TopicCandidate["archetype"]) {
+    setSelectedTopic(topic);
+    setSelectedTopicArchetype(archetype ?? topics?.selected_archetype ?? "판단형");
+    setScenario(null);
+  }
+
+  async function generateScenario() {
+    if (!selectedTopic) return;
+    setLoadingScenario(true); setError(null);
     try {
       const r = await fetch("/api/scenarios", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topic,
-          archetype: archetype ?? topics?.selected_archetype ?? "판단형",
+          topic: selectedTopic,
+          archetype: selectedTopicArchetype ?? topics?.selected_archetype ?? "판단형",
           keywords: mustTags,
           selected_articles: research?.articles.filter((a) => selectedArticleIds.includes(a.id)) ?? [],
           selected_videos: research?.videos.filter((v) => selectedVideoIds.includes(v.id)) ?? [],
@@ -234,7 +248,10 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
         }),
       });
       if (!r.ok) throw new Error(`Scenario API: ${r.status}`);
-      setScenario(await r.json());
+      const data = await r.json();
+      setScenario(data);
+      saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario: data, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds });
+      window.location.href = "/scenario";
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingScenario(false); }
   }
@@ -248,14 +265,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const primaryActionLabel = !trends
     ? "트렌드 스캔 실행"
     : !research
-      ? "리서치 실행"
+      ? "관련 유튜브 리스트 만들기"
       : !topics
-        ? "주제 추천 실행"
-        : scenario && research?.session_id
-          ? "워크스페이스 실행"
-          : loadingScenario
+        ? "선택 영상 분석해서 주제 만들기"
+        : !scenario
+          ? loadingScenario
             ? "시나리오 생성 중..."
-            : "시나리오 대기 중";
+            : "시나리오 뽑기"
+          : "시나리오 메뉴 열기";
 
   function runPrimaryAction() {
     if (!trends && !loadingTrend) {
@@ -270,18 +287,24 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       void analyze();
       return;
     }
-    if (scenario && research?.session_id) {
-      window.location.href = `/workspace/${research.session_id}`;
+    if (topics && !scenario && selectedTopic && !loadingScenario) {
+      void generateScenario();
+      return;
+    }
+    if (scenario) {
+      window.location.href = "/scenario";
     }
   }
 
   const primaryActionDisabled = !trends
     ? loadingTrend
     : !research
-      ? loadingResearch || (researchMode === "url" && !researchUrl)
+      ? loadingResearch || (selectedIssues.length === 0 && researchMode === "url" && !researchUrl)
       : !topics
-        ? !canRecommend || loadingTopic
-        : !(scenario && research?.session_id) && !!topics;
+        ? (!selectedVideoIds.length && !selectedArticleIds.length && !selectedIssues.length && !intent) || loadingTopic
+        : !scenario
+          ? !selectedTopic || loadingScenario
+          : false;
 
   const activeTrendSection = trends?.source_sections?.find((section) => section.id === selectedTrendSource) ?? trends?.source_sections?.[0] ?? null;
   const trendKeywordRows = trends?.keyword_map?.keywords?.slice(0, 30) ?? [];
@@ -442,6 +465,12 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
             <button onClick={scanTrends} disabled={loadingTrend} className="rounded-lg bg-navy px-4 py-1 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-40">
               {loadingTrend ? "스캔 중..." : "트렌드 스캔 실행"}
             </button>
+            <a
+              href="/topics"
+              className={`rounded-lg px-4 py-1 text-center text-xs font-semibold ${selectedIssues.length ? "bg-emerald-600 text-white hover:bg-emerald-700" : "pointer-events-none bg-slate-100 text-slate-400"}`}
+            >
+              선택 뉴스로 다음
+            </a>
           </div>
         </div>
 
@@ -678,7 +707,12 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       {view === "topics" && (
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
-          <h2 className="text-base font-semibold">2. 프로젝트 입력</h2>
+          <h2 className="text-base font-semibold">2. 선택 뉴스 기반 유튜브 찾기</h2>
+          {selectedIssues.length > 0 && (
+            <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-800">
+              트렌드분석에서 선택한 뉴스 {selectedIssues.length}건을 기준으로 관련 유튜브 리스트를 만듭니다.
+            </div>
+          )}
           <div className="mt-4 flex items-center gap-2">
             <button onClick={() => setResearchMode("category")} className={`rounded-lg px-3 py-1 text-xs font-semibold ${researchMode === "category" ? "bg-navy text-white" : "bg-slate-100 text-slate-600"}`}>카테고리 기반</button>
             <button onClick={() => setResearchMode("url")} className={`rounded-lg px-3 py-1 text-xs font-semibold ${researchMode === "url" ? "bg-navy text-white" : "bg-slate-100 text-slate-600"}`}>URL 기반</button>
@@ -695,8 +729,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               <input value={researchUrl} onChange={(e) => setResearchUrl(e.target.value)} placeholder="https://..." className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-navy focus:outline-none" />
             </>
           )}
-          <button disabled={loadingResearch || (researchMode === "url" && !researchUrl)} onClick={runResearch} className="mt-4 w-full rounded-lg bg-navy py-2.5 text-sm font-semibold text-white disabled:opacity-40">
-            {loadingResearch ? "리서치 중..." : "기사/유튜브 찾기"}
+          <button disabled={loadingResearch || (selectedIssues.length === 0 && researchMode === "url" && !researchUrl)} onClick={runResearch} className="mt-4 w-full rounded-lg bg-navy py-2.5 text-sm font-semibold text-white disabled:opacity-40">
+            {loadingResearch ? "유튜브 찾는 중..." : selectedIssues.length ? "선택 뉴스로 관련 유튜브 찾기" : "기사/유튜브 찾기"}
           </button>
 
           <label className="mt-4 block text-xs font-medium text-slate-500">사용자 의도 입력</label>
@@ -718,8 +752,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
         </section>
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
-          <h2 className="text-base font-semibold">3. 선택 기사</h2>
-          {!research && <div className="mt-6 text-center text-sm text-slate-400">카테고리 또는 URL 기반으로 관련 기사/영상을 먼저 불러오세요.</div>}
+          <h2 className="text-base font-semibold">3. 선택 뉴스</h2>
+          {!research && <div className="mt-6 text-center text-sm text-slate-400">트렌드분석에서 뉴스를 고른 뒤 [선택 뉴스로 관련 유튜브 찾기]를 누르세요.</div>}
           {research && (
             <div className="mt-3 space-y-3">
               <div className="rounded-lg bg-slate-50 p-3">
@@ -803,12 +837,12 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       </div>
 
       <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
-        <h2 className="text-base font-semibold">5. 주제 추천</h2>
-        {!research && !topics && <div className="mt-6 text-center text-sm text-slate-400">기사와 유튜브를 고른 뒤 주제 추천을 진행해.</div>}
+        <h2 className="text-base font-semibold">5. 선택 영상 분석 → 주제 만들기</h2>
+        {!research && !topics && <div className="mt-6 text-center text-sm text-slate-400">관련 유튜브를 고른 뒤 분석 버튼을 눌러 우리 주제를 만듭니다.</div>}
         {research && (
           <div className="mt-3 flex gap-2">
             <button onClick={expandResearch} disabled={loadingResearch || (!selectedArticleIds.length && !selectedVideoIds.length)} className="flex-1 rounded-lg border border-slate-300 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">관련 기사/영상 더 찾기</button>
-            <button disabled={loadingTopic || (!intent && !selectedArticleIds.length && !selectedVideoIds.length && selectedIssues.length === 0)} onClick={analyze} className="flex-1 rounded-lg bg-navy py-2 text-sm font-semibold text-white disabled:opacity-40">{loadingTopic ? "분석 중..." : "주제 추천 받기"}</button>
+            <button disabled={loadingTopic || (!intent && !selectedArticleIds.length && !selectedVideoIds.length && selectedIssues.length === 0)} onClick={analyze} className="flex-1 rounded-lg bg-navy py-2 text-sm font-semibold text-white disabled:opacity-40">{loadingTopic ? "분석 중..." : "선택 영상 분석해서 주제 만들기"}</button>
           </div>
         )}
         {topics && (
@@ -837,6 +871,21 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                 </button>
               );
             })}
+          </div>
+        )}
+        {topics && selectedTopic && (
+          <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-[10px] font-semibold text-blue-500">선택된 우리 주제</div>
+              <div className="mt-1 text-sm font-bold text-navy">{selectedTopic}</div>
+            </div>
+            <button
+              onClick={generateScenario}
+              disabled={loadingScenario}
+              className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            >
+              {loadingScenario ? "시나리오 생성 중..." : "시나리오 뽑기"}
+            </button>
           </div>
         )}
       </section>

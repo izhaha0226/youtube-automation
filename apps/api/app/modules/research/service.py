@@ -207,6 +207,59 @@ def create_from_category(category: str) -> ResearchSessionResponse:
     return ResearchSessionResponse(session_id=session_id, mode="category", category=category, source=source, articles=articles, videos=videos)
 
 
+def _video_keyword_overlap(item: dict, keywords: list[str]) -> int:
+    text = f"{item.get('title', '')} {item.get('channel', '')}"
+    return sum(1 for kw in keywords if kw and kw in text)
+
+
+def create_from_trend_selection(
+    selected_articles: list[str],
+    trend_keywords: list[str] | None = None,
+    category: str | None = None,
+) -> ResearchSessionResponse:
+    clean_titles = [title.strip() for title in selected_articles if title.strip()]
+    keywords = [kw for kw, _ in Counter([*(trend_keywords or []), *_extract_keywords(" ".join(clean_titles), 12)]).most_common(12)]
+    source = ResearchSource(
+        type="article",
+        title="선택 뉴스 기반 유튜브 분석",
+        summary="트렌드분석 메뉴에서 선택한 뉴스 기사로 관련 유튜브 후보를 찾는 세션",
+        keywords=keywords,
+    )
+    articles = [
+        ArticleCandidate(
+            id=str(uuid.uuid4()),
+            title=title,
+            source="트렌드 선택",
+            keywords=_extract_keywords(title),
+            related_score=1.0,
+            selected=True,
+        )
+        for title in clean_titles
+    ]
+    raw_videos = sorted(
+        fetch_youtube_trending(),
+        key=lambda x: (_video_keyword_overlap(x, keywords), _video_score(x, keywords)),
+        reverse=True,
+    )[:15]
+    videos = [
+        VideoCandidate(
+            id=str(uuid.uuid4()),
+            youtube_video_id=item.get("video_id"),
+            title=item.get("title", ""),
+            channel=item.get("channel", ""),
+            url=item.get("url", ""),
+            views=item.get("views", 0),
+            published_at=item.get("published"),
+            relevance_score=_video_score(item, keywords),
+            creative_analysis=item.get("creative_analysis", {}),
+        )
+        for item in raw_videos
+    ]
+    session_id = _persist_session("trend", category, source)
+    _replace_candidates(session_id, articles, videos)
+    return ResearchSessionResponse(session_id=session_id, mode="trend", category=category, source=source, articles=articles, videos=videos)
+
+
 def expand_session(session_id: str, article_ids: list[str], video_ids: list[str]) -> ResearchSessionResponse:
     with Session(engine) as s:
         sess = s.get(ResearchSession, session_id)

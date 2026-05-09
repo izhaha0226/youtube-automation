@@ -125,9 +125,11 @@ class VideoCandidate(BaseModel):
 
 
 class ResearchSessionCreate(BaseModel):
-    mode: Literal["url", "category"]
+    mode: Literal["url", "category", "trend"]
     category: str | None = None
     url: str | None = None
+    selected_articles: list[str] = Field(default_factory=list)
+    trend_keywords: list[str] = Field(default_factory=list)
 
 
 class ResearchSessionResponse(BaseModel):

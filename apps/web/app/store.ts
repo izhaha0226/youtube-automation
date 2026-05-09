@@ -82,6 +82,7 @@ export type DashboardState = {
   mustTags: string[];
   topics: TopicResult | null;
   selectedTopic: string | null;
+  selectedTopicArchetype?: TopicCandidate["archetype"] | null;
   scenario: ScenarioOutput | null;
   period: string;
   researchMode?: "url" | "category";
