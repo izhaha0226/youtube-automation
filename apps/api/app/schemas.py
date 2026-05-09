@@ -243,3 +243,83 @@ class PerformanceSnapshot(BaseModel):
     likes: int
     comments: int
     title: str | None = None
+
+
+# --- Trend-based Richgo Content Strategy OS ---
+
+
+class StrategySessionCreate(BaseModel):
+    channel: str = "리치고"
+    selected_issue_title: str | None = None
+    context: dict = Field(default_factory=dict)
+
+
+class StrategySessionResponse(BaseModel):
+    session_id: str
+    channel: str
+    status: str
+    selected_issue_id: str | None = None
+    selected_topic_id: str | None = None
+    context: dict = Field(default_factory=dict)
+
+
+class TrendIssueCreate(BaseModel):
+    title: str
+    summary: str = ""
+    category: str = ""
+    source: str = "manual"
+    keywords: list[str] = Field(default_factory=list)
+    urgency_score: int = Field(default=0, ge=0, le=100)
+    richgo_fit_score: int = Field(default=0, ge=0, le=100)
+    evidence: dict = Field(default_factory=dict)
+
+
+class TrendIssueResponse(TrendIssueCreate):
+    id: str
+    session_id: str
+    selected: bool = False
+
+
+class StrategyHexagonScore(BaseModel):
+    trend_fit: int = Field(ge=0, le=100)
+    view_potential: int = Field(ge=0, le=100)
+    hook_power: int = Field(ge=0, le=100)
+    target_clarity: int = Field(ge=0, le=100)
+    richgo_philosophy_fit: int = Field(ge=0, le=100)
+    production_ease: int = Field(ge=0, le=100)
+
+
+class TopicRecommendationCreate(BaseModel):
+    issue_id: str | None = None
+    title: str
+    angle: str = ""
+    score_hexagon: StrategyHexagonScore
+    richgo_value: str = "시청자가 시장을 감정이 아니라 데이터와 원칙으로 보게 만든다."
+
+
+class TopicRecommendationResponse(BaseModel):
+    id: str
+    session_id: str
+    issue_id: str | None = None
+    title: str
+    angle: str
+    score_hexagon: dict
+    total_score: int
+    richgo_value: str
+    selected: bool = False
+
+
+class StrategyCommandCenterResponse(BaseModel):
+    session: StrategySessionResponse
+    layout: dict
+    left_layer: dict
+    main_layer: dict
+    issues: list[TrendIssueResponse] = Field(default_factory=list)
+    topic_recommendations: list[TopicRecommendationResponse] = Field(default_factory=list)
+
+
+class StrategySchemaResponse(BaseModel):
+    storage_target: str
+    tables: list[dict]
+    api_contracts: list[dict]
+    pc_layout: dict

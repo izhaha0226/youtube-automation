@@ -14,6 +14,7 @@ from app.routes import (
     research,
     reviews,
     scenarios,
+    strategy,
     subtitles,
     thumbnails,
     topics,
@@ -58,4 +59,5 @@ app.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
 app.include_router(performance.router, prefix="/performance", tags=["performance"])
 app.include_router(trends.router, prefix="/trends", tags=["trends"])
 app.include_router(research.router, prefix="/research", tags=["research"])
+app.include_router(strategy.router, prefix="/strategy", tags=["strategy"])
 app.include_router(pipeline.router, prefix="/pipeline", tags=["pipeline"])

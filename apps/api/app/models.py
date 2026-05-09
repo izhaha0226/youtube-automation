@@ -142,3 +142,117 @@ class ScenarioWorkspace(SQLModel, table=True):
     status: str = "draft"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# --- Trend-based Richgo Content Strategy OS ---
+
+
+class ChannelStats(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    channel: str = Field(default="리치고", index=True)
+    measured_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    subscriber_count: int | None = None
+    audience: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    topic_patterns: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+    top_videos: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class StrategySession(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    channel: str = Field(default="리치고", index=True)
+    status: str = Field(default="draft", index=True)
+    selected_issue_id: str | None = Field(default=None, index=True)
+    selected_topic_id: str | None = Field(default=None, index=True)
+    context: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TrendIssue(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    session_id: str = Field(index=True)
+    title: str
+    summary: str = ""
+    category: str = ""
+    source: str = "manual"
+    keywords: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    urgency_score: int = 0
+    richgo_fit_score: int = 0
+    evidence: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    selected: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TrendValidation(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    issue_id: str = Field(index=True)
+    provider: str = Field(index=True)  # naver | google | news | youtube
+    keyword: str = ""
+    score: float = 0.0
+    basis: str = ""
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class NewsArticle(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    issue_id: str = Field(index=True)
+    title: str
+    source: str = ""
+    url: str = ""
+    published_at: str | None = None
+    stance: str = "neutral"
+    summary: str = ""
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class YouTubeBenchmark(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    issue_id: str = Field(index=True)
+    youtube_video_id: str | None = None
+    title: str
+    channel: str = ""
+    url: str = ""
+    views: int = 0
+    published_at: str | None = None
+    hook_pattern: str = ""
+    success_factors: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TopicRecommendation(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    session_id: str = Field(index=True)
+    issue_id: str | None = Field(default=None, index=True)
+    title: str
+    angle: str = ""
+    score_hexagon: dict[str, int] = Field(default_factory=dict, sa_column=Column(JSON))
+    total_score: int = 0
+    richgo_value: str = ""
+    selected: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ScenarioVersion(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    topic_id: str = Field(index=True)
+    version: int = 1
+    title: str
+    script_markdown: str = ""
+    opening_30s: str = ""
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class UserSelection(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    session_id: str = Field(index=True)
+    target_type: str = Field(index=True)  # issue | article | benchmark | topic | scenario
+    target_id: str = Field(index=True)
+    action: str = "select"
+    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
