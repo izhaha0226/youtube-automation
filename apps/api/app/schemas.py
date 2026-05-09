@@ -309,13 +309,75 @@ class TopicRecommendationResponse(BaseModel):
     selected: bool = False
 
 
+class TrendValidationCreate(BaseModel):
+    issue_id: str
+    provider: Literal["naver", "google", "news", "youtube"]
+    keyword: str = ""
+    score: float = Field(default=0, ge=0)
+    basis: str = ""
+    payload: dict = Field(default_factory=dict)
+
+
+class TrendValidationResponse(TrendValidationCreate):
+    id: str
+
+
+class NewsArticleCreate(BaseModel):
+    issue_id: str
+    title: str
+    source: str = ""
+    url: str = ""
+    published_at: str | None = None
+    stance: Literal["positive", "negative", "neutral", "mixed"] = "neutral"
+    summary: str = ""
+    payload: dict = Field(default_factory=dict)
+
+
+class NewsArticleResponse(NewsArticleCreate):
+    id: str
+
+
+class YouTubeBenchmarkCreate(BaseModel):
+    issue_id: str
+    youtube_video_id: str | None = None
+    title: str
+    channel: str = ""
+    url: str = ""
+    views: int = Field(default=0, ge=0)
+    published_at: str | None = None
+    hook_pattern: str = ""
+    success_factors: list[str] = Field(default_factory=list)
+    payload: dict = Field(default_factory=dict)
+
+
+class YouTubeBenchmarkResponse(YouTubeBenchmarkCreate):
+    id: str
+
+
+class ScenarioVersionCreate(BaseModel):
+    topic_id: str
+    version: int = Field(default=1, ge=1)
+    title: str
+    script_markdown: str = ""
+    opening_30s: str = ""
+    payload: dict = Field(default_factory=dict)
+
+
+class ScenarioVersionResponse(ScenarioVersionCreate):
+    id: str
+
+
 class StrategyCommandCenterResponse(BaseModel):
     session: StrategySessionResponse
     layout: dict
     left_layer: dict
     main_layer: dict
     issues: list[TrendIssueResponse] = Field(default_factory=list)
+    validations: list[TrendValidationResponse] = Field(default_factory=list)
+    news_articles: list[NewsArticleResponse] = Field(default_factory=list)
+    youtube_benchmarks: list[YouTubeBenchmarkResponse] = Field(default_factory=list)
     topic_recommendations: list[TopicRecommendationResponse] = Field(default_factory=list)
+    scenario_versions: list[ScenarioVersionResponse] = Field(default_factory=list)
 
 
 class StrategySchemaResponse(BaseModel):

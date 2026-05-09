@@ -105,6 +105,21 @@ Output:
 
 ## API Draft
 
+Implemented storage contract (2026-05-09):
+
+- `POST /strategy/sessions`
+- `GET /strategy/schema`
+- `GET /strategy/sessions/{session_id}/command-center`
+- `POST /strategy/sessions/{session_id}/issues`
+- `POST /strategy/sessions/{session_id}/validations`
+- `POST /strategy/sessions/{session_id}/news`
+- `POST /strategy/sessions/{session_id}/benchmarks`
+- `POST /strategy/sessions/{session_id}/topics`
+- `POST /strategy/sessions/{session_id}/scenarios`
+- `POST /strategy/sessions/{session_id}/select`
+
+Original product API draft:
+
 - `GET /api/channel/summary`
 - `POST /api/channel/import-youtube-analytics`
 - `POST /api/trends/scan`
@@ -158,15 +173,15 @@ Output:
 
 ## Implementation Order
 
-1. Supabase schema
-2. Backend DB adapter and models
+1. Supabase schema — done in SQLModel-compatible local schema; Supabase URL swap supported by `DATABASE_URL`
+2. Backend DB adapter and models — done for strategy storage contract
 3. Channel analytics import MVP
 4. Trend scan MVP
-5. Trend validation storage
-6. News and YouTube search APIs
-7. Benchmark analysis prompt/storage
-8. 6-axis scoring engine
-9. Topic recommendation API
-10. Scenario generation API
+5. Trend validation storage — done via `/strategy/sessions/{session_id}/validations`
+6. News and YouTube search APIs — storage endpoints done; external fetch/analyze remains
+7. Benchmark analysis prompt/storage — storage endpoint done; analysis prompt remains
+8. 6-axis scoring engine — topic score storage/API done
+9. Topic recommendation API — strategy storage API done; LLM recommendation integration remains
+10. Scenario generation API — existing `/scenarios` remains; strategy scenario version storage done
 11. Mobile-first UI redesign
 12. Dry-run E2E verification
