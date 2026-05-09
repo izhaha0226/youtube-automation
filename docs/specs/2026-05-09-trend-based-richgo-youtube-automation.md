@@ -89,7 +89,18 @@ Output:
 - Evidence source list
 - Shorts/clip points
 
+## Database Policy
+
+Current development/production phase:
+
+- Use Railway-managed database/storage first via `DATABASE_URL`.
+- Keep SQLModel models Postgres-compatible so the final DB can be swapped to Supabase later.
+- Do not introduce Supabase-specific APIs or remote Supabase writes until the product flow is stable.
+- Final migration target: Supabase Postgres after YouTube Automation development is complete.
+
 ## Supabase Tables
+
+Planned final Supabase/Postgres tables:
 
 - `channel_snapshots`
 - `channel_video_metrics`
@@ -173,15 +184,16 @@ Original product API draft:
 
 ## Implementation Order
 
-1. Supabase schema — done in SQLModel-compatible local schema; Supabase URL swap supported by `DATABASE_URL`
-2. Backend DB adapter and models — done for strategy storage contract
-3. Channel analytics import MVP
-4. Trend scan MVP
-5. Trend validation storage — done via `/strategy/sessions/{session_id}/validations`
-6. News and YouTube search APIs — storage endpoints done; external fetch/analyze remains
-7. Benchmark analysis prompt/storage — storage endpoint done; analysis prompt remains
-8. 6-axis scoring engine — topic score storage/API done
-9. Topic recommendation API — strategy storage API done; LLM recommendation integration remains
-10. Scenario generation API — existing `/scenarios` remains; strategy scenario version storage done
-11. Mobile-first UI redesign
-12. Dry-run E2E verification
+1. Railway database/storage first — active policy for development and early production
+2. Supabase schema — SQLModel-compatible schema done; Supabase URL swap later via `DATABASE_URL` after product flow is complete
+3. Backend DB adapter and models — done for strategy storage contract
+4. Channel analytics import MVP
+5. Trend scan MVP
+6. Trend validation storage — done via `/strategy/sessions/{session_id}/validations`
+7. News and YouTube search APIs — storage endpoints done; external fetch/analyze remains
+8. Benchmark analysis prompt/storage — storage endpoint done; analysis prompt remains
+9. 6-axis scoring engine — topic score storage/API done
+10. Topic recommendation API — strategy storage API done; LLM recommendation integration remains
+11. Scenario generation API — existing `/scenarios` remains; strategy scenario version storage done
+12. Mobile-first UI redesign
+13. Dry-run E2E verification
