@@ -291,10 +291,10 @@ export default function Home() {
             </div>
             <div className="space-y-3">
               <h2 className="max-w-3xl text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-3xl lg:text-4xl">
-                리서치에서 시나리오까지, ==한 화면에서 바로 실행하는== 리치고 유튜브 자동화 컨트롤 타워
+                리치고 유튜브 컨트롤 타워
               </h2>
-              <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                화이트 배경 중심으로 정리한 1차 시안이야. 모바일에서도 바로 읽히도록 카드 밀도와 버튼 우선순위를 다시 잡았고, 다음 액션이 한눈에 보이게 재구성했어.
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500 sm:text-lg">
+                트렌드 발굴부터 주제 선정, 시나리오 작성까지 한 화면에서 바로 실행합니다.
               </p>
             </div>
 
