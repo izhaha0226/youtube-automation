@@ -17,7 +17,7 @@ def topics_run(payload: TopicInput) -> TopicResult:
         log.error("topics.llm_error", error=str(e))
         raise HTTPException(
             status_code=503,
-            detail=f"LLM service unavailable: {e}. Check ANTHROPIC_API_KEY or install codex CLI.",
+            detail=f"LLM service unavailable: {e}. Check OpenAI/Codex configuration.",
         )
     except Exception as e:
         log.error("topics.unexpected_error", error=str(e))

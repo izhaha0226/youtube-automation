@@ -22,8 +22,8 @@ class LLMError(RuntimeError):
 class LLMProvider:
     """Unified LLM interface.
 
-    Primary path: OpenAI Codex CLI (`codex exec`) — uses user's authenticated Codex session.
-    Backup path: Anthropic SDK (if ANTHROPIC_API_KEY + credits).
+    OpenAI-only path: Codex CLI (`codex exec`) using the authenticated Codex session.
+    Backup model is another OpenAI/Codex-compatible model.
     """
 
     def __init__(
@@ -60,8 +60,8 @@ class LLMProvider:
             raise LLMError(f"invalid JSON from LLM: {raw[:300]}")
 
     def _call(self, model: str, system: str, user: str, json_mode: bool) -> str:
-        if model.startswith("claude"):
-            return self._anthropic(model, system, user, json_mode)
+        if model.lower().startswith("claude"):
+            raise LLMError("Non-OpenAI models are disabled for this project")
         if not shutil.which("codex"):
             raise LLMError("codex CLI not installed – cannot use codex-based model")
         return self._codex(model, system, user, json_mode)
@@ -124,26 +124,6 @@ class LLMProvider:
                 out_path.unlink()
             except OSError:
                 pass
-
-    def _anthropic(self, model: str, system: str, user: str, json_mode: bool) -> str:
-        import anthropic
-
-        if not settings.anthropic_api_key:
-            raise LLMError("ANTHROPIC_API_KEY missing")
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        prompt_user = user
-        if json_mode:
-            prompt_user += "\n\n출력은 반드시 JSON 객체만."
-        msg = client.messages.create(
-            model=model,
-            max_tokens=4096,
-            temperature=self.temperature,
-            system=system,
-            messages=[{"role": "user", "content": prompt_user}],
-        )
-        parts = [b.text for b in msg.content if hasattr(b, "text")]
-        return "".join(parts)
-
 
 def _extract_last_codex_reply(stdout: str) -> str:
     marker = "\ncodex\n"

@@ -14,7 +14,7 @@ export default function SupportPage() {
         <div className="mt-3 grid gap-1 text-sm text-slate-500">
           <div>프로젝트: youtube-automation v0.1.0</div>
           <div>기본 모델: GPT-5.4</div>
-          <div>백업 모델: Claude Opus 4.7</div>
+          <div>백업 모델: GPT-4o</div>
           <div>채널: 리치고 (김기원 대표)</div>
           <div>백엔드: FastAPI (Railway)</div>
           <div>프론트엔드: Next.js 16 (Vercel)</div>

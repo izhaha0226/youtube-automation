@@ -6,7 +6,7 @@ export default function SettingsPage() {
   const [obsidianPath, setObsidianPath] = useState("/Users/yosiki/Documents/Obsidian Vault/wiki/YouTube 자동화프로젝트");
   const [shareLink, setShareLink] = useState("https://share.note.sx/qynhdluo");
   const [model, setModel] = useState("gpt-5.4");
-  const [backupModel, setBackupModel] = useState("claude-opus-4-7");
+  const [backupModel, setBackupModel] = useState("gpt-4o");
   const [syncMode, setSyncMode] = useState("obsidian_first");
   const [ttsEngine, setTtsEngine] = useState("azure");
   const [thumbnailEngine, setThumbnailEngine] = useState("fal.ai");
@@ -45,13 +45,13 @@ export default function SettingsPage() {
             <select value={model} onChange={(e) => setModel(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
               <option value="gpt-5.4">GPT-5.4</option>
               <option value="gpt-4o">GPT-4o</option>
-              <option value="claude-opus-4-7">Claude Opus 4.7</option>
+              <option value="gpt-5.4-mini">GPT-5.4 mini</option>
             </select>
           </label>
           <label className="block">
             <span className="text-xs font-medium text-slate-500">백업 모델</span>
             <select value={backupModel} onChange={(e) => setBackupModel(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <option value="claude-opus-4-7">Claude Opus 4.7</option>
+              <option value="gpt-4o">GPT-4o</option>
               <option value="gpt-5.4">GPT-5.4</option>
             </select>
           </label>

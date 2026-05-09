@@ -2,7 +2,7 @@ project_name: youtube-automation
 channel_name: 리치고
 share_link: https://share.note.sx/qynhdluo
 default_model: gpt-5.4
-backup_model: claude-opus-4-7
+backup_model: gpt-4o
 sync_mode: obsidian_first
 languages:
   - ko

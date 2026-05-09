@@ -17,7 +17,6 @@ dependencies = [
   "PyYAML>=6.0",
   "python-dotenv>=1.0",
   "openai>=1.55",
-  "anthropic>=0.40",
   "fal-client>=0.5",
   "google-api-python-client>=2.151",
   "google-auth>=2.35",

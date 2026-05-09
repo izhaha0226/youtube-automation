@@ -24,9 +24,8 @@ class Settings(BaseSettings):
 
     # LLM
     openai_api_key: str | None = None
-    anthropic_api_key: str | None = None
     default_model: str = "gpt-5.4"
-    backup_model: str = "claude-opus-4-7"
+    backup_model: str = "gpt-4o"
 
     # YouTube
     youtube_client_id: str | None = None
