@@ -72,6 +72,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
   const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
   const [loadingResearch, setLoadingResearch] = useState(false);
+  const [showAllKeywords, setShowAllKeywords] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -130,6 +131,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       if (period === "custom" && customStart && customEnd) url += `&start=${customStart}&end=${customEnd}`;
       const r = await fetch(url);
       if (!r.ok) throw new Error(`Trend API: ${r.status}`);
+      setShowAllKeywords(false);
       setTrends(await r.json());
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingTrend(false); }
@@ -261,53 +263,12 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   }
 
   const selectedSourceCount = selectedArticleIds.length + selectedVideoIds.length + selectedIssues.length;
-  const canRecommend = !!(intent || selectedSourceCount > 0);
-  const primaryActionLabel = !trends
-    ? "트렌드 스캔 실행"
-    : !research
-      ? "관련 유튜브 리스트 만들기"
-      : !topics
-        ? "선택 영상 분석해서 주제 만들기"
-        : !scenario
-          ? loadingScenario
-            ? "시나리오 생성 중..."
-            : "시나리오 뽑기"
-          : "시나리오 메뉴 열기";
-
-  function runPrimaryAction() {
-    if (!trends && !loadingTrend) {
-      void scanTrends();
-      return;
-    }
-    if (!research && !loadingResearch) {
-      void runResearch();
-      return;
-    }
-    if (!topics && !loadingTopic && canRecommend) {
-      void analyze();
-      return;
-    }
-    if (topics && !scenario && selectedTopic && !loadingScenario) {
-      void generateScenario();
-      return;
-    }
-    if (scenario) {
-      window.location.href = "/scenario";
-    }
-  }
-
-  const primaryActionDisabled = !trends
-    ? loadingTrend
-    : !research
-      ? loadingResearch || (selectedIssues.length === 0 && researchMode === "url" && !researchUrl)
-      : !topics
-        ? (!selectedVideoIds.length && !selectedArticleIds.length && !selectedIssues.length && !intent) || loadingTopic
-        : !scenario
-          ? !selectedTopic || loadingScenario
-          : false;
-
   const activeTrendSection = trends?.source_sections?.find((section) => section.id === selectedTrendSource) ?? trends?.source_sections?.[0] ?? null;
-  const trendKeywordRows = trends?.keyword_map?.keywords?.slice(0, 30) ?? [];
+  const trendKeywordRows = trends?.keyword_map?.keywords ?? [];
+  const displayedTrendKeywordRows = showAllKeywords ? trendKeywordRows : trendKeywordRows.slice(0, 10);
+  const keywordFrequencyRows = trends?.charts?.keyword_frequency?.slice(0, 10) ?? [];
+  const trendLineKeywords = trends?.charts?.top3_keywords ?? [];
+  const trendLineRows = trends?.charts?.top3_timeline ?? [];
   const trendCorrelationRows = (trends?.keyword_map?.correlations?.slice(0, 12) ?? []).map((row) => ({
     pair: `${row.source} × ${row.target}`,
     score: Number((row.score * 100).toFixed(1)),
@@ -388,29 +349,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <button
-                onClick={runPrimaryAction}
-                disabled={primaryActionDisabled}
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-navy px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(14,30,58,0.7)] transition hover:bg-navy/92 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {primaryActionLabel}
-              </button>
-              <button
-                onClick={scanTrends}
-                disabled={loadingTrend}
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
-              >
-                {loadingTrend ? "트렌드 스캔 중..." : "트렌드 다시 스캔"}
-              </button>
-              {research?.session_id && scenario ? (
-                <a
-                  href={`/workspace/${research.session_id}`}
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-navy/15 bg-navy/5 px-5 py-3 text-sm font-semibold text-navy transition hover:bg-navy/10"
-                >
-                  워크스페이스 열기
-                </a>
-              ) : null}
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800">
+              분석 버튼을 누르기 전에는 주제 분석을 실행하지 않습니다.
             </div>
           </div>
 
@@ -482,31 +422,35 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
         {trends && (
           <div className="mt-4 space-y-5">
-            {trends.charts.top3_keywords.length > 0 && trends.charts.top3_timeline.length > 0 && (
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                <div className="mb-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
-                  <span>네이버 검색 트렌드 (30일)</span>
-                  {trends.charts.top3_keywords.map((k, i) => (
-                    <span key={k} className="rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: LINE_COLORS[i] + "20", color: LINE_COLORS[i] }}>
-                      #{i + 1} {k}
-                    </span>
-                  ))}
-                </div>
-                <div className="mb-1 text-[10px] text-slate-400">출처: {trends.charts.timeline_source}</div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <div className="mb-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
+                <span>트렌드 분석 차트</span>
+                {trendLineKeywords.map((k, i) => (
+                  <span key={k} className="rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ backgroundColor: LINE_COLORS[i] + "20", color: LINE_COLORS[i] }}>
+                    #{i + 1} {k}
+                  </span>
+                ))}
+              </div>
+              <div className="mb-1 text-[10px] text-slate-400">출처: {trends.charts.timeline_source}</div>
+              {trendLineKeywords.length > 0 && trendLineRows.length > 0 ? (
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={trends.charts.top3_timeline} margin={{ left: 10, right: 10 }}>
+                  <LineChart data={trendLineRows} margin={{ left: 10, right: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 9 }} interval={2} />
                     <YAxis tick={{ fontSize: 9 }} />
                     <Tooltip contentStyle={{ fontSize: 11 }} />
                     <Legend wrapperStyle={{ fontSize: 10 }} />
-                    {trends.charts.top3_keywords.map((kw, i) => (
+                    {trendLineKeywords.map((kw, i) => (
                       <Line key={kw} type="monotone" dataKey={kw} stroke={LINE_COLORS[i]} strokeWidth={2} dot={false} />
                     ))}
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
-            )}
+              ) : (
+                <div className="flex h-[200px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white text-xs text-slate-400">
+                  차트 데이터가 비어 있습니다. 트렌드 스캔을 다시 실행하세요.
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_1fr]">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
@@ -588,12 +532,12 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
               <div className="space-y-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="mb-2 text-xs font-semibold text-slate-600">30+ 세부 키워드 빈도</div>
+                  <div className="mb-2 text-xs font-semibold text-slate-600">키워드 차트 Top 10</div>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={trends.charts.keyword_frequency.slice(0, 15)} layout="vertical" margin={{ left: 70, right: 10 }}>
+                    <BarChart data={keywordFrequencyRows} layout="vertical" margin={{ left: 90, right: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis type="number" tick={{ fontSize: 10 }} />
-                      <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={65} />
+                      <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={85} />
                       <Tooltip contentStyle={{ fontSize: 11 }} />
                       <Bar dataKey="count" fill="#0E1E3A" radius={[0, 4, 4, 0]} barSize={14} />
                     </BarChart>
@@ -618,8 +562,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.3fr_0.9fr_0.9fr]">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-600">세부 키워드 30개 이상</span>
-                  <span className="text-[10px] text-slate-400">출처별 등장량 + 클러스터</span>
+                  <span className="text-xs font-semibold text-slate-600">키워드 순위 Top 10</span>
+                  <span className="text-[10px] text-slate-400">기본 10개 · 더보기로 전체 확인</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -634,7 +578,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                       </tr>
                     </thead>
                     <tbody>
-                      {trendKeywordRows.map((row) => (
+                      {displayedTrendKeywordRows.map((row) => (
                         <tr key={row.keyword} className="border-b border-slate-100 last:border-0">
                           <td className="py-1.5 pr-3 font-medium text-slate-800">{row.keyword}</td>
                           <td className="py-1.5 pr-3 text-right text-slate-500">{row.naver}</td>
@@ -649,6 +593,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                     </tbody>
                   </table>
                 </div>
+                {trendKeywordRows.length > 10 && (
+                  <button
+                    onClick={() => setShowAllKeywords((prev) => !prev)}
+                    className="mt-3 w-full rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    {showAllKeywords ? "접기" : `더보기 (${trendKeywordRows.length - 10}개)`}
+                  </button>
+                )}
               </div>
 
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
