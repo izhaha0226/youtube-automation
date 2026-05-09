@@ -1,5 +1,6 @@
-type TrendItem = { title: string; channel?: string; link?: string; pub?: string; query?: string; views?: number; published?: string; source?: string; url?: string; likes?: number; video_id?: string; provider?: string };
-type BenchmarkVideo = { video_id: string; title: string; channel: string; published: string; views: number; likes: number; comments: number };
+type CreativeAnalysis = { hook_type?: string; patterns?: string[]; score?: number; title_length?: number };
+type TrendItem = { title: string; channel?: string; link?: string; pub?: string; query?: string; views?: number; published?: string; source?: string; url?: string; likes?: number; video_id?: string; provider?: string; thumbnail_url?: string; creative_analysis?: CreativeAnalysis };
+type BenchmarkVideo = { video_id: string; title: string; channel: string; published: string; views: number; likes: number; comments: number; url?: string; thumbnail_url?: string; source?: string; creative_analysis?: CreativeAnalysis };
 type ChartData = {
   keyword_frequency: { keyword: string; count: number }[];
   category_distribution: { category: string; count: number }[];
@@ -71,7 +72,7 @@ type ScenarioOutput = {
 };
 type ResearchSource = { type: string; title: string; url?: string; summary?: string; keywords?: string[] };
 type ResearchArticle = { id: string; title: string; source?: string; url?: string; published_at?: string; summary?: string; keywords?: string[]; related_score?: number; selected?: boolean };
-type ResearchVideo = { id: string; youtube_video_id?: string; title: string; channel?: string; url?: string; views?: number; published_at?: string; relevance_score?: number; selected?: boolean };
+type ResearchVideo = { id: string; youtube_video_id?: string; title: string; channel?: string; url?: string; views?: number; published_at?: string; relevance_score?: number; creative_analysis?: CreativeAnalysis; selected?: boolean };
 type ResearchSession = { session_id: string; mode: string; category?: string; source: ResearchSource; articles: ResearchArticle[]; videos: ResearchVideo[] };
 
 export type DashboardState = {

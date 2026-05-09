@@ -120,6 +120,7 @@ def _replace_candidates(session_id: str, articles: list[ArticleCandidate], video
                     views=video.views,
                     published_at=video.published_at,
                     relevance_score=video.relevance_score,
+                    payload={"creative_analysis": video.creative_analysis},
                     selected=video.selected,
                 )
             )
@@ -156,6 +157,7 @@ def create_from_url(url: str, category: str | None = None) -> ResearchSessionRes
             views=item.get("views", 0),
             published_at=item.get("published"),
             relevance_score=_video_score(item, keywords),
+            creative_analysis=item.get("creative_analysis", {}),
         )
         for item in scored_videos
     ]
@@ -196,6 +198,7 @@ def create_from_category(category: str) -> ResearchSessionResponse:
             views=item.get("views", 0),
             published_at=item.get("published"),
             relevance_score=1.0,
+            creative_analysis=item.get("creative_analysis", {}),
         )
         for item in raw_videos[:10]
     ]
@@ -258,6 +261,7 @@ def expand_session(session_id: str, article_ids: list[str], video_ids: list[str]
             views=item.get("views", 0),
             published_at=item.get("published"),
             relevance_score=_video_score(item, keywords),
+            creative_analysis=item.get("creative_analysis", {}),
         )
         for item in raw_videos
     ]

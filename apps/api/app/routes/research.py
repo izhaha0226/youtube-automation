@@ -73,6 +73,7 @@ def research_get(session_id: str) -> ResearchSessionResponse:
                 "views": v.views,
                 "published_at": v.published_at,
                 "relevance_score": v.relevance_score,
+                "creative_analysis": (v.payload or {}).get("creative_analysis", {}),
                 "selected": v.selected,
             }
             for v in video_rows

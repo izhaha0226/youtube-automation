@@ -27,10 +27,19 @@ function formatViews(n: number) {
 }
 function formatDate(raw: string | undefined) {
   if (!raw) return "";
+  if (/\d+\s*(일|시간|분|개월|년) 전/.test(raw)) return raw;
   try {
     const d = new Date(raw);
     return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
   } catch { return raw.slice(0, 10); }
+}
+function hookLabel(type?: string) {
+  const labels: Record<string, string> = { warning: "경고형", question: "질문형", opportunity: "기회형", informational: "정보형" };
+  return labels[type ?? ""] ?? type ?? "";
+}
+function patternLabel(pattern: string) {
+  const labels: Record<string, string> = { risk_warning: "위기", question_hook: "질문", opportunity_signal: "기회", numbered: "숫자", expert_authority: "전문가", checklist: "체크리스트", short_title: "짧은제목", emotional_punctuation: "감정부호" };
+  return labels[pattern] ?? pattern;
 }
 
 type PipelineView = "dashboard" | "trends" | "topics" | "scenario";
@@ -525,7 +534,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                                   {item.published && <span>{formatDate(item.published)}</span>}
                                   {(item.views ?? 0) > 0 && <span className="font-semibold text-navy">조회 {formatViews(item.views!)}</span>}
                                   {item.query && <span className="rounded bg-slate-100 px-1 py-0.5">{item.query}</span>}
+                                  {item.creative_analysis?.hook_type && <span className="rounded bg-amber-50 px-1 py-0.5 font-semibold text-amber-700">{hookLabel(item.creative_analysis.hook_type)}</span>}
+                                  {typeof item.creative_analysis?.score === "number" && <span className="rounded bg-emerald-50 px-1 py-0.5 font-semibold text-emerald-700">소재 {item.creative_analysis.score}/10</span>}
                                 </div>
+                                {(item.creative_analysis?.patterns?.length ?? 0) > 0 && (
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {item.creative_analysis!.patterns!.slice(0, 4).map((p) => <span key={p} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{patternLabel(p)}</span>)}
+                                  </div>
+                                )}
                                 {(item.link || item.url) && (
                                   <a href={item.link || item.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-[10px] text-blue-500 hover:underline">
                                     {item.link || item.url}
@@ -766,7 +782,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                             {item.channel && <span className="font-medium text-slate-500">{item.channel}</span>}
                             {(item.views ?? 0) > 0 && <span className="font-semibold text-navy">{formatViews(item.views!)}</span>}
                             {item.published_at && <span>{formatDate(item.published_at)}</span>}
+                            {item.creative_analysis?.hook_type && <span className="rounded bg-amber-50 px-1 py-0.5 font-semibold text-amber-700">{hookLabel(item.creative_analysis.hook_type)}</span>}
+                            {typeof item.creative_analysis?.score === "number" && <span className="rounded bg-emerald-50 px-1 py-0.5 font-semibold text-emerald-700">소재 {item.creative_analysis.score}/10</span>}
                           </div>
+                          {(item.creative_analysis?.patterns?.length ?? 0) > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {item.creative_analysis!.patterns!.slice(0, 4).map((p) => <span key={p} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{patternLabel(p)}</span>)}
+                            </div>
+                          )}
                           {item.url && <a href={item.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-[10px] text-blue-500 hover:underline">{item.url}</a>}
                         </div>
                       </div>

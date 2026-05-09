@@ -120,6 +120,7 @@ class VideoCandidate(BaseModel):
     views: int = 0
     published_at: str | None = None
     relevance_score: float = 0.0
+    creative_analysis: dict = Field(default_factory=dict)
     selected: bool = False
 
 

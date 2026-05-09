@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.modules.trend.youtube_fallback import analyze_creative, fetch_youtube_search_fallback
 
 log = get_logger(__name__)
 
@@ -56,11 +57,26 @@ class TrendSnapshot:
         return top
 
 
+def _fetch_youtube_fallback_for_queries(queries: list[str], per_query: int = 5) -> list[dict]:
+    items: list[dict] = []
+    seen: set[str] = set()
+    for query in queries:
+        for item in fetch_youtube_search_fallback(query, max_results=per_query):
+            key = item.get("video_id") or item.get("url") or item.get("title")
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            items.append(item)
+    items.sort(key=lambda x: (x.get("views", 0), x.get("creative_analysis", {}).get("score", 0)), reverse=True)
+    return items
+
+
 def fetch_youtube_trending(channel_id: str | None = None) -> list[dict]:
     api_key = settings.effective_youtube_api_key
+    queries = ECON_QUERIES[:5]
     if not api_key:
-        log.info("trend.youtube.skip", reason="no GOOGLE_API_KEY or YOUTUBE_API_KEY")
-        return []
+        log.info("trend.youtube.fallback", reason="no GOOGLE_API_KEY or YOUTUBE_API_KEY")
+        return _fetch_youtube_fallback_for_queries(queries)
     try:
         from googleapiclient.discovery import build
 
@@ -69,7 +85,7 @@ def fetch_youtube_trending(channel_id: str | None = None) -> list[dict]:
         video_ids: list[str] = []
         id_to_item: dict[str, dict] = {}
 
-        for q in ECON_QUERIES[:5]:
+        for q in queries:
             resp = (
                 yt.search()
                 .list(q=q, part="snippet", type="video", maxResults=5, regionCode="KR")
@@ -78,15 +94,19 @@ def fetch_youtube_trending(channel_id: str | None = None) -> list[dict]:
             for it in resp.get("items", []):
                 sn = it.get("snippet", {})
                 vid = it.get("id", {}).get("videoId", "")
+                title = sn.get("title", "")
                 item = {
-                    "title": sn.get("title", ""),
+                    "title": title,
                     "channel": sn.get("channelTitle", ""),
                     "query": q,
                     "published": sn.get("publishedAt", ""),
                     "video_id": vid,
                     "url": f"https://youtube.com/watch?v={vid}" if vid else "",
+                    "thumbnail_url": (sn.get("thumbnails", {}).get("high") or sn.get("thumbnails", {}).get("default") or {}).get("url", ""),
                     "views": 0,
                     "likes": 0,
+                    "source": "youtube_api",
+                    "creative_analysis": analyze_creative(title),
                 }
                 items.append(item)
                 if vid:
@@ -110,7 +130,7 @@ def fetch_youtube_trending(channel_id: str | None = None) -> list[dict]:
         return items
     except Exception as e:
         log.warning("trend.youtube.error", error=str(e))
-        return []
+        return _fetch_youtube_fallback_for_queries(queries)
 
 
 def fetch_news() -> list[dict]:
