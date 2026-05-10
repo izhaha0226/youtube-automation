@@ -76,8 +76,15 @@ def select_topic(payload: TopicInput) -> TopicResult:
     candidates = candidates[:top_k]
 
     selected = data.get("selected_topic") or (candidates[0].title if candidates else "")
-    reason = data.get("selected_reason") or (candidates[0].reason if candidates else "")
-    selected_archetype = data.get("selected_archetype") or (candidates[0].archetype if candidates else "판단형")
+    selected_candidate = next((candidate for candidate in candidates if candidate.title == selected), None)
+    selected_was_filtered = selected_candidate is None and bool(candidates)
+    if selected_was_filtered:
+        selected_candidate = candidates[0]
+        selected = selected_candidate.title
+
+    reason = data.get("selected_reason") if not selected_was_filtered else ""
+    reason = reason or (selected_candidate.reason if selected_candidate else "")
+    selected_archetype = selected_candidate.archetype if selected_candidate else "판단형"
 
     result = TopicResult(
         recommended_topics=candidates,
