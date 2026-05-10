@@ -20,6 +20,29 @@ const PERIODS = [
   { value: "custom", label: "사용자 지정" },
 ];
 
+type TrendSourceFilter = "all" | "naver" | "google" | "youtube";
+const TREND_SOURCE_TABS: { id: TrendSourceFilter; label: string }[] = [
+  { id: "all", label: "전체" },
+  { id: "naver", label: "네이버" },
+  { id: "google", label: "구글" },
+  { id: "youtube", label: "유튜브" },
+];
+const SOURCE_SHORT_LABELS: Record<string, string> = { naver: "네이버", google: "구글", youtube: "유튜브" };
+
+function compactUrl(raw?: string) {
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host.includes("news.google.com")) return "news.google.com · 기사 링크";
+    if (host.includes("youtube.com") || host.includes("youtu.be")) return `${host} · 영상 링크`;
+    const path = url.pathname && url.pathname !== "/" ? `${url.pathname.split("/").filter(Boolean).slice(0, 2).join("/")}…` : "";
+    return path ? `${host}/${path}` : host;
+  } catch {
+    return raw.length > 42 ? `${raw.slice(0, 39)}…` : raw;
+  }
+}
+
 function formatViews(n: number) {
   if (n >= 10000) return `${(n / 10000).toFixed(1)}만`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}천`;
@@ -48,7 +71,7 @@ type ProductionDraft = { title: string; meta: string; status: string };
 export default function PipelineClient({ view = "dashboard" }: { view?: PipelineView }) {
   const [trends, setTrends] = useState<TrendData | null>(null);
   const [loadingTrend, setLoadingTrend] = useState(false);
-  const [selectedTrendSource, setSelectedTrendSource] = useState<"naver" | "google" | "youtube">("naver");
+  const [selectedTrendSource, setSelectedTrendSource] = useState<TrendSourceFilter>("all");
   const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
   const [period, setPeriod] = useState("7d");
   const [customStart, setCustomStart] = useState("");
@@ -292,7 +315,30 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   }
 
   const selectedSourceCount = selectedArticleIds.length + selectedVideoIds.length + selectedIssues.length;
-  const activeTrendSection = trends?.source_sections?.find((section) => section.id === selectedTrendSource) ?? trends?.source_sections?.[0] ?? null;
+  const trendSections = trends?.source_sections ?? [];
+  const allTrendSourceItems = trendSections.flatMap((section) =>
+    section.items.map((item, index) => ({
+      ...item,
+      itemKey: `${section.id}-${index}-${item.title}`,
+      sourceId: section.id,
+      sourceLabel: SOURCE_SHORT_LABELS[section.id] ?? section.label,
+    }))
+  );
+  const filteredTrendSourceItems = selectedTrendSource === "all"
+    ? allTrendSourceItems
+    : allTrendSourceItems.filter((item) => item.sourceId === selectedTrendSource);
+  const displayedTrendSourceItems = selectedIssues.length > 0
+    ? filteredTrendSourceItems.filter((item) => selectedIssues.includes(item.title))
+    : filteredTrendSourceItems;
+  const activeTrendKeywords = Array.from(new Set(
+    trendSections
+      .filter((section) => selectedTrendSource === "all" || section.id === selectedTrendSource)
+      .flatMap((section) => section.keywords)
+  )).slice(0, 16);
+  const activeTrendTitle = selectedTrendSource === "all" ? "전체 트렌드" : `${SOURCE_SHORT_LABELS[selectedTrendSource]} 트렌드`;
+  const activeTrendSubtext = selectedIssues.length > 0
+    ? `체크한 항목 ${displayedTrendSourceItems.length}건만 표시 중`
+    : `${selectedTrendSource === "all" ? "네이버·구글·유튜브" : SOURCE_SHORT_LABELS[selectedTrendSource]} 항목 ${displayedTrendSourceItems.length}건`;
   const trendKeywordRows = trends?.keyword_map?.keywords ?? [];
   const displayedTrendKeywordRows = showAllKeywords ? trendKeywordRows : trendKeywordRows.slice(0, 10);
   const keywordFrequencyRows = trends?.charts?.keyword_frequency?.slice(0, 10) ?? [];
@@ -304,6 +350,13 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     cluster: row.cluster,
   }));
   const trendClusters = trends?.keyword_map?.clusters ?? [];
+  const benchmarkTopByChannel = trends
+    ? Object.values(trends.benchmarks.reduce<Record<string, TrendData["benchmarks"][number]>>((acc, item) => {
+      const key = item.channel || "채널 미상";
+      if (!acc[key] || item.views > acc[key].views) acc[key] = item;
+      return acc;
+    }, {})).sort((a, b) => b.views - a.views)
+    : [];
 
   if (view === "dashboard") {
     const baseProductions: (ProductionDraft & { key: string; href: string })[] = [
@@ -509,87 +562,98 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-600">소스별 트렌드 분리 뷰</div>
-                    <div className="mt-1 text-[11px] text-slate-400">네이버 / 구글 / 유튜브를 분리해서 기준 시점과 키워드를 따로 본다.</div>
+                    <div className="text-xs font-semibold text-slate-600">트렌드 소스 필터</div>
+                    <div className="mt-1 text-[11px] text-slate-400">전체 / 네이버 / 구글 / 유튜브만 표시하고, 체크하면 체크 항목만 보여줍니다.</div>
                   </div>
-                  <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
-                    {(trends.source_sections ?? []).map((section) => (
-                      <button key={section.id} onClick={() => setSelectedTrendSource(section.id)} className={`rounded-lg px-3 py-2 text-left text-xs font-semibold sm:py-1 ${selectedTrendSource === section.id ? "bg-navy text-white" : "bg-white text-slate-600 border border-slate-200"}`}>
-                        {section.label}
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                    {TREND_SOURCE_TABS.map((tab) => (
+                      <button key={tab.id} onClick={() => setSelectedTrendSource(tab.id)} className={`rounded-lg px-3 py-2 text-left text-xs font-semibold sm:py-1 ${selectedTrendSource === tab.id ? "bg-navy text-white" : "bg-white text-slate-600 border border-slate-200"}`}>
+                        {tab.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {activeTrendSection && (
-                  <div className="mt-4 space-y-3">
-                    <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[1fr_auto]">
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800">{activeTrendSection.label}</div>
-                        <div className="mt-1 text-[11px] text-slate-500">{activeTrendSection.subtext}</div>
-                      </div>
-                      <div className="text-left text-[11px] text-slate-500 sm:text-right">
-                        <div className="font-semibold text-slate-700">{activeTrendSection.basis_label}</div>
-                        <div>{activeTrendSection.basis_value}</div>
-                      </div>
+                <div className="mt-4 space-y-3">
+                  <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[1fr_auto]">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-800">{activeTrendTitle}</div>
+                      <div className="mt-1 text-[11px] text-slate-500">{activeTrendSubtext}</div>
                     </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {activeTrendSection.keywords.map((keyword) => (
-                        <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 border border-slate-200">
-                          #{keyword}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="max-h-[360px] space-y-2 overflow-y-auto">
-                      {activeTrendSection.items.map((item, i) => {
-                        const selected = selectedIssues.includes(item.title);
-                        return (
-                          <div key={`${activeTrendSection.id}-${i}`} className={`rounded-lg border p-3 ${selected ? "border-navy bg-blue-50" : "border-slate-200 bg-white"}`}>
-                            <div className="flex items-start gap-2">
-                              <button onClick={() => toggleIssue(item.title)} className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[9px] ${selected ? "border-navy bg-navy text-white" : "border-slate-300"}`}>
-                                {selected ? "✓" : ""}
-                              </button>
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs font-medium leading-snug text-slate-800">{item.title}</div>
-                                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
-                                  {item.source && <span className="font-medium text-slate-500">{item.source}</span>}
-                                  {item.channel && <span className="font-medium text-slate-500">{item.channel}</span>}
-                                  {item.pub && <span>{formatDate(item.pub)}</span>}
-                                  {item.published && <span>{formatDate(item.published)}</span>}
-                                  {(item.views ?? 0) > 0 && <span className="font-semibold text-navy">조회 {formatViews(item.views!)}</span>}
-                                  {item.query && <span className="rounded bg-slate-100 px-1 py-0.5">{item.query}</span>}
-                                  {item.creative_analysis?.hook_type && <span className="rounded bg-amber-50 px-1 py-0.5 font-semibold text-amber-700">{hookLabel(item.creative_analysis.hook_type)}</span>}
-                                  {typeof item.creative_analysis?.score === "number" && <span className="rounded bg-emerald-50 px-1 py-0.5 font-semibold text-emerald-700">소재 {item.creative_analysis.score}/10</span>}
-                                </div>
-                                {(item.creative_analysis?.patterns?.length ?? 0) > 0 && (
-                                  <div className="mt-1 flex flex-wrap gap-1">
-                                    {item.creative_analysis!.patterns!.slice(0, 4).map((p) => <span key={p} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{patternLabel(p)}</span>)}
-                                  </div>
-                                )}
-                                {(item.link || item.url) && (
-                                  <a href={item.link || item.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-[10px] text-blue-500 hover:underline">
-                                    {item.link || item.url}
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                      <div className="mb-2 text-[11px] text-emerald-800">뉴스를 선택한 뒤 다음 단계로 넘어가 관련 유튜브를 찾습니다. 현재 선택 {selectedIssues.length}건</div>
-                      <a
-                        href="/topics"
-                        className={`block rounded-lg px-4 py-2 text-center text-xs font-semibold ${selectedIssues.length ? "bg-emerald-600 text-white hover:bg-emerald-700" : "pointer-events-none bg-white text-slate-400"}`}
-                      >
-                        선택한 뉴스로 다음 단계 이동
-                      </a>
+                    <div className="text-left text-[11px] text-slate-500 sm:text-right">
+                      <div className="font-semibold text-slate-700">선택 상태</div>
+                      <div>{selectedIssues.length ? `선택 ${selectedIssues.length}건` : "전체 표시"}</div>
                     </div>
                   </div>
-                )}
+
+                  <div className="flex flex-wrap gap-2">
+                    {activeTrendKeywords.map((keyword) => (
+                      <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 border border-slate-200">
+                        #{keyword}
+                      </span>
+                    ))}
+                  </div>
+
+                  {selectedIssues.length > 0 && (
+                    <button onClick={() => setSelectedIssues([])} className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+                      선택 해제하고 전체 보기
+                    </button>
+                  )}
+
+                  <div className="max-h-[360px] space-y-2 overflow-y-auto">
+                    {displayedTrendSourceItems.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-slate-200 bg-white p-4 text-center text-xs text-slate-400">표시할 항목이 없습니다.</div>
+                    )}
+                    {displayedTrendSourceItems.map((item) => {
+                      const selected = selectedIssues.includes(item.title);
+                      const href = item.link || item.url;
+                      return (
+                        <div key={item.itemKey} className={`rounded-lg border p-3 ${selected ? "border-navy bg-blue-50" : "border-slate-200 bg-white"}`}>
+                          <div className="flex items-start gap-2">
+                            <button onClick={() => toggleIssue(item.title)} className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[9px] ${selected ? "border-navy bg-navy text-white" : "border-slate-300"}`}>
+                              {selected ? "✓" : ""}
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">{item.sourceLabel}</span>
+                                <div className="text-xs font-medium leading-snug text-slate-800">{item.title}</div>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
+                                {item.source && <span className="font-medium text-slate-500">{item.source}</span>}
+                                {item.channel && <span className="font-medium text-slate-500">{item.channel}</span>}
+                                {item.pub && <span>{formatDate(item.pub)}</span>}
+                                {item.published && <span>{formatDate(item.published)}</span>}
+                                {(item.views ?? 0) > 0 && <span className="font-semibold text-navy">조회 {formatViews(item.views!)}</span>}
+                                {item.query && <span className="rounded bg-slate-100 px-1 py-0.5">{item.query}</span>}
+                                {item.creative_analysis?.hook_type && <span className="rounded bg-amber-50 px-1 py-0.5 font-semibold text-amber-700">{hookLabel(item.creative_analysis.hook_type)}</span>}
+                                {typeof item.creative_analysis?.score === "number" && <span className="rounded bg-emerald-50 px-1 py-0.5 font-semibold text-emerald-700">소재 {item.creative_analysis.score}/10</span>}
+                              </div>
+                              {(item.creative_analysis?.patterns?.length ?? 0) > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {item.creative_analysis!.patterns!.slice(0, 4).map((p) => <span key={p} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{patternLabel(p)}</span>)}
+                                </div>
+                              )}
+                              {href && (
+                                <a href={href} target="_blank" rel="noreferrer" className="mt-1 block truncate text-[10px] text-blue-500 hover:underline">
+                                  {compactUrl(href)}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                    <div className="mb-2 text-[11px] text-emerald-800">뉴스를 선택한 뒤 다음 단계로 넘어가 관련 유튜브를 찾습니다. 현재 선택 {selectedIssues.length}건</div>
+                    <a
+                      href="/topics"
+                      className={`block rounded-lg px-4 py-2 text-center text-xs font-semibold ${selectedIssues.length ? "bg-emerald-600 text-white hover:bg-emerald-700" : "pointer-events-none bg-white text-slate-400"}`}
+                    >
+                      선택한 뉴스로 다음 단계 이동
+                    </a>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -697,13 +761,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                   </PieChart>
                 </ResponsiveContainer>
 
-                {trends.benchmarks.length > 0 && (
+                {benchmarkTopByChannel.length > 0 && (
                   <div className="mt-4">
-                    <div className="mb-2 text-xs font-semibold text-slate-600">유튜브 벤치마크 Top 조회수</div>
+                    <div className="mb-1 text-xs font-semibold text-slate-600">유튜브 벤치마크 채널별 최고 조회수</div>
+                    <div className="mb-2 text-[10px] text-slate-400">동일 채널 반복을 막기 위해 채널당 최고 영상 1개만 표시합니다.</div>
                     <ResponsiveContainer width="100%" height={170}>
-                      <BarChart data={trends.benchmarks.slice(0, 6)} margin={{ left: 10, right: 10 }}>
+                      <BarChart data={benchmarkTopByChannel.slice(0, 6)} margin={{ left: 10, right: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="channel" tick={{ fontSize: 9 }} />
+                        <XAxis dataKey="channel" tick={{ fontSize: 9 }} interval={0} />
                         <YAxis tick={{ fontSize: 9 }} tickFormatter={formatViews} />
                         <Tooltip contentStyle={{ fontSize: 11 }} formatter={(v: unknown) => formatViews(Number(v))} />
                         <Bar dataKey="views" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={16} />
