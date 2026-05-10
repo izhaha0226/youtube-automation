@@ -342,6 +342,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const trendKeywordRows = trends?.keyword_map?.keywords ?? [];
   const displayedTrendKeywordRows = showAllKeywords ? trendKeywordRows : trendKeywordRows.slice(0, 10);
   const keywordFrequencyRows = trends?.charts?.keyword_frequency?.slice(0, 10) ?? [];
+  const keywordChartHeight = Math.max(300, keywordFrequencyRows.length * 32);
   const trendLineKeywords = trends?.charts?.top3_keywords ?? [];
   const trendLineRows = trends?.charts?.top3_timeline ?? [];
   const trendCorrelationRows = (trends?.keyword_map?.correlations?.slice(0, 12) ?? []).map((row) => ({
@@ -659,11 +660,11 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               <div className="space-y-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                   <div className="mb-2 text-xs font-semibold text-slate-600">키워드 차트 Top 10</div>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={keywordFrequencyRows} layout="vertical" margin={{ left: 145, right: 10 }}>
+                  <ResponsiveContainer width="100%" height={keywordChartHeight}>
+                    <BarChart data={keywordFrequencyRows} layout="vertical" margin={{ left: 8, right: 10, top: 6, bottom: 6 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis type="number" tick={{ fontSize: 10 }} />
-                      <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={140} />
+                      <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={150} interval={0} minTickGap={0} />
                       <Tooltip contentStyle={{ fontSize: 11 }} />
                       <Bar dataKey="count" fill="#0E1E3A" radius={[0, 4, 4, 0]} barSize={14} />
                     </BarChart>
@@ -686,7 +687,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.3fr_0.9fr_0.9fr]">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-600">키워드 순위 Top 10</span>
@@ -751,7 +752,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                 <div className="mb-2 text-xs font-semibold text-slate-600">카테고리별 이슈 분포</div>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
                     <Pie data={trends.charts.category_distribution} cx="50%" cy="50%" outerRadius={70} dataKey="count" nameKey="category" label={false}>
                       {trends.charts.category_distribution.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
@@ -760,23 +761,23 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                     <Legend wrapperStyle={{ fontSize: 10 }} />
                   </PieChart>
                 </ResponsiveContainer>
-
-                {benchmarkTopByChannel.length > 0 && (
-                  <div className="mt-4">
-                    <div className="mb-1 text-xs font-semibold text-slate-600">유튜브 벤치마크 채널별 최고 조회수</div>
-                    <div className="mb-2 text-[10px] text-slate-400">동일 채널 반복을 막기 위해 채널당 최고 영상 1개만 표시합니다.</div>
-                    <ResponsiveContainer width="100%" height={170}>
-                      <BarChart data={benchmarkTopByChannel.slice(0, 6)} margin={{ left: 10, right: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="channel" tick={{ fontSize: 9 }} interval={0} />
-                        <YAxis tick={{ fontSize: 9 }} tickFormatter={formatViews} />
-                        <Tooltip contentStyle={{ fontSize: 11 }} formatter={(v: unknown) => formatViews(Number(v))} />
-                        <Bar dataKey="views" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={16} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
               </div>
+
+              {benchmarkTopByChannel.length > 0 && (
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="mb-1 text-xs font-semibold text-slate-600">유튜브 벤치마크 채널별 최고 조회수</div>
+                  <div className="mb-2 text-[10px] text-slate-400">동일 채널 반복을 막기 위해 채널당 최고 영상 1개만 표시합니다.</div>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={benchmarkTopByChannel.slice(0, 6)} margin={{ left: 10, right: 10, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="channel" tick={{ fontSize: 9 }} interval={0} />
+                      <YAxis tick={{ fontSize: 9 }} tickFormatter={formatViews} />
+                      <Tooltip contentStyle={{ fontSize: 11 }} formatter={(v: unknown) => formatViews(Number(v))} />
+                      <Bar dataKey="views" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={18} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           </div>
         )}
