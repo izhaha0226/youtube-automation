@@ -288,24 +288,49 @@ def expand_session(session_id: str, article_ids: list[str], video_ids: list[str]
             summary=sess.source_summary or "",
             keywords=sess.source_keywords,
         )
+        existing_articles = [
+            {
+                "id": row.id,
+                "title": row.title,
+                "source": row.source,
+                "url": row.url,
+                "published_at": row.published_at,
+                "summary": row.summary,
+                "keywords": list(row.keywords),
+                "related_score": row.related_score,
+                "selected": row.id in article_ids,
+            }
+            for row in article_rows
+        ]
+        existing_videos = [
+            {
+                "id": row.id,
+                "youtube_video_id": row.youtube_video_id,
+                "title": row.title,
+                "channel": row.channel,
+                "url": row.url,
+                "views": row.views,
+                "published_at": row.published_at,
+                "relevance_score": row.relevance_score,
+                "creative_analysis": (row.payload or {}).get("creative_analysis", {}),
+                "selected": row.id in video_ids,
+            }
+            for row in video_rows
+        ]
+        mode = sess.mode
+        category = sess.category
     keywords = [kw for kw, _ in Counter(keywords).most_common(10)]
-    raw_articles = sorted(fetch_news(), key=lambda x: _article_score(x, keywords), reverse=True)[:15]
     raw_videos = sorted(fetch_youtube_trending(), key=lambda x: _video_score(x, keywords), reverse=True)[:15]
-    articles = [
-        ArticleCandidate(
-            id=str(uuid.uuid4()),
-            title=item.get("title", ""),
-            source=item.get("source", ""),
-            url=item.get("link", ""),
-            published_at=item.get("pub"),
-            summary=item.get("desc", ""),
-            keywords=_extract_keywords(f"{item.get('title', '')} {item.get('desc', '')}"),
-            related_score=_article_score(item, keywords),
-        )
-        for item in raw_articles
-    ]
-    videos = [
-        VideoCandidate(
+    articles = [ArticleCandidate(**row) for row in existing_articles]
+    videos_by_key: dict[str, VideoCandidate] = {}
+    for row in existing_videos:
+        key = row["youtube_video_id"] or row["url"] or row["title"]
+        videos_by_key[key] = VideoCandidate(**row)
+    for item in raw_videos:
+        key = item.get("video_id") or item.get("url") or item.get("title", "")
+        if key in videos_by_key:
+            continue
+        videos_by_key[key] = VideoCandidate(
             id=str(uuid.uuid4()),
             youtube_video_id=item.get("video_id"),
             title=item.get("title", ""),
@@ -316,7 +341,6 @@ def expand_session(session_id: str, article_ids: list[str], video_ids: list[str]
             relevance_score=_video_score(item, keywords),
             creative_analysis=item.get("creative_analysis", {}),
         )
-        for item in raw_videos
-    ]
+    videos = sorted(videos_by_key.values(), key=lambda item: (item.selected, item.relevance_score, item.views), reverse=True)[:15]
     _replace_candidates(session_id, articles, videos)
-    return ResearchSessionResponse(session_id=session_id, mode=sess.mode, category=sess.category, source=source, articles=articles, videos=videos)
+    return ResearchSessionResponse(session_id=session_id, mode=mode, category=category, source=source, articles=articles, videos=videos)
