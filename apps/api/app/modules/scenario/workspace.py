@@ -20,7 +20,7 @@ def save_scenario_workspace(payload: ScenarioInput, scenario: ScenarioOutput) ->
         target_duration_max=payload.target_duration_max,
         hook_30s=scenario.hook_30s,
         bridge_3min=scenario.bridge_3min,
-        body_sections=scenario.body_sections,
+        body_sections=[section.model_dump() for section in scenario.body_sections],
         full_script_markdown=_to_markdown(scenario),
         title_candidates=scenario.title_candidates,
         thumbnail_candidates=scenario.thumbnail_candidates,
@@ -230,7 +230,9 @@ def _to_markdown(scenario: ScenarioOutput) -> str:
         lines.append("## 본문")
         lines.append("")
         for section in scenario.body_sections:
-            lines += [f"### {section.get('heading', '섹션')}", section.get('script', ''), ""]
+            lines += [f"### {section.heading or '섹션'}", section.script, ""]
+            if section.narration and section.narration != section.script:
+                lines += ["#### 나레이션", section.narration, ""]
     elif scenario.body:
         lines.append("## 본문")
         lines.append("")

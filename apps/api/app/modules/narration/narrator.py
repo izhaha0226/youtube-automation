@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.core.config import settings
-from app.core.llm import llm
+from app.core.llm import LLMError, llm
 from app.core.logging import get_logger
 from app.core.paths import workspace_dir
 from app.core.prompts import load_prompt, render
@@ -21,7 +21,11 @@ def generate_narration(run_id: str, payload: NarrationInput) -> NarrationOutput:
         expected_length_sec=payload.expected_length_sec,
         tone=payload.tone,
     )
-    data = llm(temperature=0.4).generate_json(system=system, user=user)
+    try:
+        data = llm(temperature=0.4).generate_json(system=system, user=user)
+    except LLMError as e:
+        log.warning("narration.fallback", error=str(e), run_id=run_id)
+        data = _fallback_narration_payload(payload)
     text_ko = data.get("text_ko", "")
     sentences = data.get("sentences", [])
 
@@ -37,6 +41,7 @@ def generate_narration(run_id: str, payload: NarrationInput) -> NarrationOutput:
         timeline = _estimate_timeline(sentences, payload.expected_length_sec)
 
     # persist text
+    out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "narration_ko.txt").write_text(text_ko, encoding="utf-8")
 
     return NarrationOutput(
@@ -101,3 +106,40 @@ def _estimate_timeline(sentences: list[str], total_sec: int) -> list[dict]:
         tl.append({"idx": idx, "text": s, "start_ms": cursor, "end_ms": cursor + dur})
         cursor += dur
     return tl
+
+
+def _fallback_narration_payload(payload: NarrationInput) -> dict:
+    scenario = payload.scenario
+    blocks: list[str] = []
+    for value in [scenario.opening, scenario.hook_30s, scenario.bridge_3min]:
+        if value.strip():
+            blocks.append(value.strip())
+    for section in scenario.body_sections:
+        text = (section.narration or section.script or section.summary).strip()
+        if text:
+            blocks.append(text)
+    for value in [scenario.conclusion, scenario.cta]:
+        if value.strip():
+            blocks.append(value.strip())
+    text_ko = "\n\n".join(blocks)
+    sentences = _split_sentences(text_ko)
+    return {"text_ko": text_ko, "sentences": sentences, "emphasis": []}
+
+
+def _split_sentences(text: str) -> list[str]:
+    normalized = " ".join(text.replace("\n", " ").split())
+    if not normalized:
+        return []
+    sentences: list[str] = []
+    buffer = ""
+    for ch in normalized:
+        buffer += ch
+        if ch in ".?!。！？":
+            item = buffer.strip()
+            if item:
+                sentences.append(item)
+            buffer = ""
+    tail = buffer.strip()
+    if tail:
+        sentences.append(tail)
+    return sentences

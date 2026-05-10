@@ -8,8 +8,6 @@ type ReviewOutput = {
   fix_suggestions: string[];
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787";
-
 export default function WorkspaceReviewAction({
   sessionId,
   initialReview,
@@ -25,7 +23,7 @@ export default function WorkspaceReviewAction({
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(`${API}/scenarios/workspace/${sessionId}/review`, { method: "POST" });
+      const r = await fetch(`/api/scenarios/workspace/${sessionId}/review`, { method: "POST" });
       if (!r.ok) throw new Error(`Review API: ${r.status}`);
       setReview(await r.json());
     } catch (e) {
@@ -39,7 +37,7 @@ export default function WorkspaceReviewAction({
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(`${API}/scenarios/workspace/${sessionId}/regenerate`, { method: "POST" });
+      const r = await fetch(`/api/scenarios/workspace/${sessionId}/regenerate`, { method: "POST" });
       if (!r.ok) throw new Error(`Regenerate API: ${r.status}`);
       window.location.reload();
     } catch (e) {

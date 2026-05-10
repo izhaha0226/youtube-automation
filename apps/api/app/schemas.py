@@ -79,13 +79,23 @@ class ScenarioInput(BaseModel):
     session_id: str | None = None
 
 
+class ScenarioBodySection(BaseModel):
+    heading: str = ""
+    summary: str = ""
+    script: str = ""
+    narration: str = ""
+    reference_type: str = ""
+    reference_hint: str = ""
+    viewer_takeaway: str = ""
+
+
 class ScenarioOutput(BaseModel):
     hook: str
     hook_30s: str = ""
     bridge_3min: str = ""
     archetype: ContentArchetype = "판단형"
     body: list[str]
-    body_sections: list[dict] = Field(default_factory=list)
+    body_sections: list[ScenarioBodySection] = Field(default_factory=list)
     conclusion: str
     action_takeaways: list[str] = Field(default_factory=list)
     cta: str

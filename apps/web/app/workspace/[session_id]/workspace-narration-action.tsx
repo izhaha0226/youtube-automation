@@ -9,8 +9,6 @@ type NarrationOutput = {
   timeline: { idx: number; text: string; start_ms: number; end_ms: number }[];
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787";
-
 export default function WorkspaceNarrationAction({
   sessionId,
   initialNarration,
@@ -26,7 +24,7 @@ export default function WorkspaceNarrationAction({
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(`${API}/scenarios/workspace/${sessionId}/narrate`, { method: "POST" });
+      const r = await fetch(`/api/scenarios/workspace/${sessionId}/narrate`, { method: "POST" });
       if (!r.ok) throw new Error(`Narration API: ${r.status}`);
       setNarration(await r.json());
     } catch (e) {

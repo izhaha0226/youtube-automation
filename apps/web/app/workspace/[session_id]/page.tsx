@@ -18,7 +18,7 @@ type WorkspaceResponse = {
     bridge_3min?: string;
     archetype?: "경고형" | "판단형" | "기회형" | "구조해설형" | "원칙형";
     body?: string[];
-    body_sections?: { heading: string; script: string; summary?: string; viewer_takeaway?: string }[];
+    body_sections?: { heading: string; script: string; narration?: string; summary?: string; viewer_takeaway?: string }[];
     conclusion?: string;
     action_takeaways?: string[];
     cta?: string;
@@ -116,7 +116,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ sess
   const scenario = workspace.scenario ?? {};
   const selectedArticles = pickSelected(research?.articles, workspace.selected_article_ids);
   const selectedVideos = pickSelected(research?.videos, workspace.selected_video_ids);
-  const bodySections: { heading: string; script: string; summary?: string; viewer_takeaway?: string }[] = scenario.body_sections?.length
+  const bodySections: { heading: string; script: string; narration?: string; summary?: string; viewer_takeaway?: string }[] = scenario.body_sections?.length
     ? scenario.body_sections
     : (scenario.body ?? []).map((script, index) => ({ heading: `섹션 ${index + 1}`, script }));
 
@@ -181,6 +181,12 @@ export default async function WorkspacePage({ params }: { params: Promise<{ sess
                 <div key={`${section.heading}-${index}`} className="border-l-2 border-slate-200 pl-4">
                   <div className="text-sm font-semibold text-slate-800">{section.heading}</div>
                   <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{section.script}</p>
+                  {(section.narration || section.script) && (
+                    <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2">
+                      <div className="text-[11px] font-semibold text-indigo-600">섹션 나레이션</div>
+                      <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-indigo-950">{section.narration || section.script}</p>
+                    </div>
+                  )}
                   {section.summary && <p className="mt-2 text-xs text-slate-500">요약: {section.summary}</p>}
                   {section.viewer_takeaway && <p className="mt-1 text-xs text-blue-600">시청자 포인트: {section.viewer_takeaway}</p>}
                 </div>

@@ -24,6 +24,7 @@ def test_generate_scenario_returns_fallback_when_llm_unavailable(monkeypatch):
     assert result.hook_30s
     assert result.body_sections
     assert len(result.body) == len(result.body_sections)
+    assert all(section.narration for section in result.body_sections)
     assert result.title_candidates
     assert result.thumbnail_candidates
     assert result.archetype == "판단형"

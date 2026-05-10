@@ -9,32 +9,14 @@ type ThumbnailOutput = {
   save_path: string;
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787";
-
 export default function WorkspaceThumbnailAction({
-  sessionId,
   initialThumbnail,
 }: {
   sessionId: string;
   initialThumbnail?: ThumbnailOutput | null;
 }) {
-  const [loading, setLoading] = useState(false);
-  const [thumbnail, setThumbnail] = useState<ThumbnailOutput | null>(initialThumbnail ?? null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function runThumbnail() {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await fetch(`${API}/scenarios/workspace/${sessionId}/thumbnail`, { method: "POST" });
-      if (!r.ok) throw new Error(`Thumbnail API: ${r.status}`);
-      setThumbnail(await r.json());
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [thumbnail] = useState<ThumbnailOutput | null>(initialThumbnail ?? null);
+  const [showPreparing, setShowPreparing] = useState(false);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -44,15 +26,27 @@ export default function WorkspaceThumbnailAction({
           <p className="mt-1 text-xs text-slate-500">현재 주제와 썸네일 후보 문구를 기반으로 최종 썸네일 시안을 만든다.</p>
         </div>
         <button
-          onClick={runThumbnail}
-          disabled={loading}
-          className="rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40"
+          onClick={() => setShowPreparing(true)}
+          className="rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
         >
-          {loading ? "생성 중..." : thumbnail ? "다시 생성" : "썸네일 생성"}
+          썸네일 생성
         </button>
       </div>
 
-      {error && <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">{error}</div>}
+      {showPreparing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <div className="text-base font-semibold text-slate-900">준비중</div>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">썸네일 생성 기능은 현재 준비중입니다. 안정화 후 연결하겠습니다.</p>
+            <button
+              onClick={() => setShowPreparing(false)}
+              className="mt-5 w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
 
       {thumbnail && (
         <div className="mt-4 space-y-4">

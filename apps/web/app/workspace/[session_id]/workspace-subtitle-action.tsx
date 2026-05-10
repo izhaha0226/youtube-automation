@@ -8,8 +8,6 @@ type SubtitleOutput = {
   json_path: string;
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787";
-
 const LABELS: Record<string, string> = {
   ko: "한국어",
   en: "영어",
@@ -32,7 +30,7 @@ export default function WorkspaceSubtitleAction({
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(`${API}/scenarios/workspace/${sessionId}/subtitles`, { method: "POST" });
+      const r = await fetch(`/api/scenarios/workspace/${sessionId}/subtitles`, { method: "POST" });
       if (!r.ok) throw new Error(`Subtitle API: ${r.status}`);
       setSubtitles(await r.json());
     } catch (e) {

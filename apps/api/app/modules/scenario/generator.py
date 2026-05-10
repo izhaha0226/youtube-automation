@@ -44,7 +44,7 @@ def generate_scenario(payload: ScenarioInput) -> ScenarioOutput:
         bridge_3min=data.get("bridge_3min", ""),
         archetype=data.get("archetype", payload.archetype),
         body=data.get("body", []),
-        body_sections=data.get("body_sections", []),
+        body_sections=_normalize_body_sections(data.get("body_sections", []), data.get("body", [])),
         conclusion=data.get("conclusion", ""),
         action_takeaways=data.get("action_takeaways", []),
         cta=data.get("cta", ""),
@@ -74,18 +74,21 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
         {
             "heading": "1. 오늘 이 이슈를 봐야 하는 이유",
             "script": f"오늘 주제는 '{topic}'입니다. 핵심은 {focus}가 같은 방향을 가리키는지 먼저 확인하는 겁니다. 뉴스 제목 하나만 보고 움직이면 늦거나 과하게 반응할 수 있습니다.",
+            "narration": f"오늘 주제는 '{topic}'입니다. 핵심은 {focus}가 같은 방향을 가리키는지 먼저 확인하는 겁니다. 뉴스 제목 하나만 보고 움직이면 늦거나 과하게 반응할 수 있습니다.",
             "summary": "뉴스 반응이 아니라 판단 기준으로 접근",
             "viewer_takeaway": "지금 필요한 것은 결론보다 체크리스트입니다.",
         },
         {
             "heading": "2. 사도 되는 구간과 기다려야 하는 구간",
             "script": f"첫째, 가격이 버티는 지역인지 봅니다. 둘째, 금리와 대출 조건이 실제 부담을 낮추는지 봅니다. 셋째, {first_keyword} 관련 정책 변화가 매수자에게 유리한지 불리한지 분리해서 봐야 합니다.",
+            "narration": f"첫째, 가격이 버티는 지역인지 봅니다. 둘째, 금리와 대출 조건이 실제 부담을 낮추는지 봅니다. 셋째, {first_keyword} 관련 정책 변화가 매수자에게 유리한지 불리한지 분리해서 봐야 합니다.",
             "summary": "가격·금리·정책을 분리해서 판단",
             "viewer_takeaway": "세 조건 중 둘 이상이 맞아야 행동 후보입니다.",
         },
         {
             "heading": "3. 리치고식 최종 판단 프레임",
             "script": "실수요자는 거주 안정성과 현금흐름을 먼저 보고, 투자자는 출구와 보유 비용을 먼저 봐야 합니다. 둘을 섞으면 '좋은 이야기'에는 반응하지만 실제 의사결정은 흔들립니다.",
+            "narration": "실수요자는 거주 안정성과 현금흐름을 먼저 보고, 투자자는 출구와 보유 비용을 먼저 봐야 합니다. 둘을 섞으면 '좋은 이야기'에는 반응하지만 실제 의사결정은 흔들립니다.",
             "summary": "실수요와 투자를 분리",
             "viewer_takeaway": "내 포지션부터 정해야 같은 데이터도 다르게 해석됩니다.",
         },
@@ -130,3 +133,39 @@ def _keywords_from_sources(payload: ScenarioInput) -> list[str]:
             if isinstance(keyword, str) and keyword.strip():
                 values.append(keyword.strip())
     return values
+
+
+def _normalize_body_sections(sections: list[dict], body: list[str]) -> list[dict]:
+    normalized: list[dict] = []
+    for index, raw in enumerate(sections or []):
+        if not isinstance(raw, dict):
+            continue
+        script = str(raw.get("script") or raw.get("narration") or "").strip()
+        narration = str(raw.get("narration") or script).strip()
+        normalized.append(
+            {
+                **raw,
+                "heading": str(raw.get("heading") or f"섹션 {index + 1}"),
+                "summary": str(raw.get("summary") or ""),
+                "script": script,
+                "narration": narration,
+                "reference_type": str(raw.get("reference_type") or ""),
+                "reference_hint": str(raw.get("reference_hint") or ""),
+                "viewer_takeaway": str(raw.get("viewer_takeaway") or ""),
+            }
+        )
+    if normalized:
+        return normalized
+    return [
+        {
+            "heading": f"섹션 {index + 1}",
+            "summary": "",
+            "script": str(script),
+            "narration": str(script),
+            "reference_type": "internal",
+            "reference_hint": "본문 요약에서 자동 구성",
+            "viewer_takeaway": "",
+        }
+        for index, script in enumerate(body or [])
+        if str(script).strip()
+    ]

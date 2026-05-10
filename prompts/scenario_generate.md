@@ -73,12 +73,14 @@
   "heading": "섹션 제목",
   "summary": "한 줄 요약",
   "script": "실제 말하는 대본",
+  "narration": "나레이션 생성 단계 없이도 바로 읽을 수 있는 구어체 나레이션. script와 같아도 되지만, 반드시 실제 낭독 문장으로 채운다.",
   "reference_type": "article | video | mixed | internal",
   "reference_hint": "어떤 근거를 녹였는지 짧게 설명",
   "viewer_takeaway": "시청자가 얻는 판단 포인트"
 }
 ```
 - script는 실제 구어체 4~8문장 정도
+- narration은 본문 섹션 카드에서 함께 보여줄 실제 낭독문이다. 비워두지 말고, 시나리오 내 말문장 그대로 채운다.
 - 최소 1개 섹션은 반론/리스크/예외를 다뤄라
 - 최소 1개 섹션은 지역 또는 실수요자 관점을 넣어라
 
@@ -130,6 +132,7 @@
       "heading": "섹션 제목",
       "summary": "한 줄 요약",
       "script": "실제 말하는 대본",
+      "narration": "본문 섹션에 같이 표시할 실제 구어체 나레이션",
       "reference_type": "mixed",
       "reference_hint": "근거 요약",
       "viewer_takeaway": "시청자 판단 포인트"
