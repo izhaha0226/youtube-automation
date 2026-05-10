@@ -26,6 +26,8 @@ assert(source.includes('hiddenProductionKeys'), '제작 리스트 삭제/숨김 
 assert(source.includes('saveProductionEdit'), '제작 리스트 수정 저장 함수가 필요합니다.');
 assert(source.includes('deleteSelectedProduction'), '제작 리스트 삭제 실행 함수가 필요합니다.');
 assert(source.includes('resumeProduction') && source.includes('getProductionResumeHref'), '제작 리스트 클릭 시 마지막 진행 단계로 이동해야 합니다.');
+assert(source.includes('`/workspace/${research.session_id}`'), '시나리오와 세션이 있으면 데이터가 채워진 워크스페이스로 이어가야 합니다.');
+assert(source.includes('hydratedDashboard') && source.includes('if (!hydratedDashboard) return;'), '저장된 대시보드가 복원되기 전 빈 상태로 덮어쓰면 안 됩니다.');
 assert(source.includes('클릭하면 마지막 진행 단계로 이어가기'), '제작 리스트에 이어가기 안내가 필요합니다.');
 assert(source.includes('삭제 확인'), '삭제는 확인 단계를 거쳐야 합니다.');
 assert(source.includes('복구'), '삭제된 제작 항목을 복구할 수 있어야 합니다.');

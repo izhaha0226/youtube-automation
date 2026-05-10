@@ -105,12 +105,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const [editingProductionKey, setEditingProductionKey] = useState<string | null>(null);
   const [productionDraft, setProductionDraft] = useState<ProductionDraft>({ title: "", meta: "", status: "" });
   const [deleteProductionKey, setDeleteProductionKey] = useState<string | null>(null);
+  const [hydratedDashboard, setHydratedDashboard] = useState(false);
 
   // 페이지 로드 시 세션 복원
   useEffect(() => {
     const isNewWorkflow = new URLSearchParams(window.location.search).get("new") === "1";
     if (isNewWorkflow) {
       clearDashboard();
+      setHydratedDashboard(true);
       return;
     }
 
@@ -154,12 +156,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           .catch(() => {});
       }
     }
+    setHydratedDashboard(true);
   }, []);
 
   // 상태 변경 시 자동 저장
   useEffect(() => {
+    if (!hydratedDashboard) return;
     saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys });
-  }, [trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys]);
+  }, [hydratedDashboard, trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys]);
 
   async function scanTrends() {
     setLoadingTrend(true);
@@ -347,6 +351,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   }
 
   function getProductionResumeHref(itemHref: string) {
+    if (scenario && research?.session_id) return `/workspace/${research.session_id}`;
     if (scenario) return "/scenario";
     if (topics || selectedTopic) return "/topics";
     if (research || trends) return "/trends";
