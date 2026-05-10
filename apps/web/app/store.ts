@@ -121,4 +121,10 @@ export function loadDashboard(): DashboardState | null {
   }
 }
 
+export function clearDashboard() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {}
+}
+
 export type { TrendData, TrendItem, BenchmarkVideo, ChartData, TopicCandidate, TopicResult, ScenarioOutput, ResearchSession, ResearchArticle, ResearchVideo };

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from app.core.config import settings
-from app.core.llm import llm
+from app.core.llm import LLMError, llm
 from app.core.logging import get_logger
 from app.core.prompts import load_prompt, render
 from app.modules.richgo.editorial import content_archetype_context, editorial_rules_context, philosophy_context
@@ -40,7 +40,11 @@ def select_topic(payload: TopicInput) -> TopicResult:
         editorial_rules=editorial_rules_context(),
         content_archetype_guide=content_archetype_context(),
     )
-    data = llm(temperature=0.5).generate_json(system=system, user=user)
+    try:
+        data = llm(temperature=0.5).generate_json(system=system, user=user)
+    except LLMError as e:
+        log.warning("topic.select.fallback", error=str(e))
+        return _fallback_topic_result(payload, current_issues, trend_keywords)
 
     rules = settings.scoring_rules
     threshold_recommend = rules.get("thresholds", {}).get("recommend", 18)
@@ -94,3 +98,45 @@ def select_topic(payload: TopicInput) -> TopicResult:
     )
     log.info("topic.select.done", count=len(candidates), selected=selected)
     return result
+
+
+def _fallback_topic_result(payload: TopicInput, current_issues: list[str], trend_keywords: list[str]) -> TopicResult:
+    """Deterministic fallback so /api/topics does not 503 when Codex/LLM is unavailable."""
+    primary_issue = _clean_issue(current_issues[0]) if current_issues else (payload.user_intent or "오늘 부동산 시장 핵심 변화")
+    keywords = list(dict.fromkeys([kw for kw in trend_keywords[:8] if kw])) or ["부동산", "금리", "아파트"]
+    focus = " · ".join(keywords[:3])
+    templates = [
+        ("판단형", f"{primary_issue}, 지금 사도 되는지 기다려야 하는지 판단 기준 3가지"),
+        ("구조해설형", f"{focus} 신호로 보는 이번 부동산 시장 변화의 진짜 이유"),
+        ("기회형", f"남들은 불안해할 때 기회가 생기는 조건, {keywords[0]}에서 확인해야 할 것"),
+    ]
+    candidates: list[TopicCandidate] = []
+    for idx, (archetype, title) in enumerate(templates):
+        score = TopicScore(popularity=4, economy=4, realestate=5, virality=4 - min(idx, 1), richgo_fit=5, discussion=4)
+        candidates.append(
+            TopicCandidate(
+                title=title,
+                reason="LLM 호출 실패 시에도 촬영을 멈추지 않도록 선택 이슈와 트렌드 키워드 기반으로 자동 생성한 후보입니다.",
+                score=score,
+                archetype=archetype,
+                risk="실시간 근거와 실제 데이터 확인 후 표현 강도를 조정해야 합니다.",
+                keywords=keywords[:5],
+                discovery_hypothesis=f"{focus} 조합은 오늘 시청자가 바로 판단하고 싶은 문제와 연결됩니다.",
+                strategy_hypothesis="리치고 관점의 숫자 기반 판단 프레임으로 뉴스 요약과 차별화합니다.",
+                tactical_hypothesis="오프닝은 선택지를 선명하게 던지고, 본문은 데이터→판단 기준→실행/보류 조건 순서로 구성합니다.",
+                verification_signals=["CTR", "유지율", "댓글 질문", "저장", "공유"],
+                failure_criteria=["클릭률 저조", "뉴스 요약 반응만 발생", "실행 기준이 모호하다는 댓글"],
+                decision_label="iterate" if idx else "scale",
+                next_loop="업로드 후 실제 성과와 댓글 질문으로 다음 주제 각도를 재검증합니다.",
+            )
+        )
+    return TopicResult(
+        recommended_topics=candidates,
+        selected_topic=candidates[0].title,
+        selected_reason=candidates[0].reason,
+        selected_archetype=candidates[0].archetype,
+    )
+
+
+def _clean_issue(issue: str) -> str:
+    return issue.replace("[ARTICLE]", "").replace("[VIDEO]", "").strip()

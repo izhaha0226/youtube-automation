@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell, Legend,
   LineChart, Line,
 } from "recharts";
-import { saveDashboard, loadDashboard } from "./store";
+import { saveDashboard, loadDashboard, clearDashboard } from "./store";
 import type { TrendData, TopicCandidate, TopicResult, ScenarioOutput, ResearchSession } from "./store";
 
 const SECTION_LABELS: Record<number, string> = { 0: "Hook (오프닝)", 1: "문제 제기 (현상)", 2: "핵심 분석 (데이터 연결)", 3: "경제 연계 (거시 관점)", 4: "부동산 전망 & 대응" };
@@ -108,17 +108,23 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
   // 페이지 로드 시 세션 복원
   useEffect(() => {
+    const isNewWorkflow = new URLSearchParams(window.location.search).get("new") === "1";
+    if (isNewWorkflow) {
+      clearDashboard();
+      return;
+    }
+
     const saved = loadDashboard();
     if (saved) {
       setTrends(saved.trends);
-      setSelectedIssues(saved.selectedIssues);
-      setIntent(saved.intent);
-      setMustTags(saved.mustTags);
+      setSelectedIssues(saved.selectedIssues ?? []);
+      setIntent(saved.intent ?? "");
+      setMustTags(saved.mustTags ?? []);
       setTopics(saved.topics);
       setSelectedTopic(saved.selectedTopic);
       setSelectedTopicArchetype(saved.selectedTopicArchetype ?? null);
       setScenario(saved.scenario);
-      setPeriod(saved.period);
+      setPeriod(saved.period ?? "7d");
       setResearchMode(saved.researchMode ?? "category");
       setResearchUrl(saved.researchUrl ?? "");
       setResearchCategory(saved.researchCategory ?? "부동산");
@@ -167,6 +173,32 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       setTrends(await r.json());
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingTrend(false); }
+  }
+
+  function startNewVideo() {
+    clearDashboard();
+    setTrends(null);
+    setSelectedIssues([]);
+    setIntent("");
+    setMustTags([]);
+    setMustInput("");
+    setTopics(null);
+    setScenario(null);
+    setSelectedTopic(null);
+    setSelectedTopicArchetype(null);
+    setPeriod("7d");
+    setResearchMode("category");
+    setResearchUrl("");
+    setResearchCategory("부동산");
+    setResearch(null);
+    setSelectedArticleIds([]);
+    setSelectedVideoIds([]);
+    setShowAllKeywords(false);
+    setError(null);
+    setSelectedProductionKey("new-video");
+    setEditingProductionKey(null);
+    setDeleteProductionKey(null);
+    window.location.href = "/trends?new=1";
   }
 
   function toggleIssue(title: string) {
@@ -351,8 +383,11 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     cluster: row.cluster,
   }));
   const trendClusters = trends?.keyword_map?.clusters ?? [];
-  const benchmarkTopByChannel = trends
-    ? Object.values(trends.benchmarks.reduce<Record<string, TrendData["benchmarks"][number]>>((acc, item) => {
+  const trendBenchmarks = Array.isArray(trends?.benchmarks) ? trends.benchmarks : [];
+  const trendNews = Array.isArray(trends?.news) ? trends.news : [];
+  const trendYoutube = Array.isArray(trends?.youtube) ? trends.youtube : [];
+  const benchmarkTopByChannel = trendBenchmarks.length > 0
+    ? Object.values(trendBenchmarks.reduce<Record<string, TrendData["benchmarks"][number]>>((acc, item) => {
       const key = item.channel || "채널 미상";
       if (!acc[key] || item.views > acc[key].views) acc[key] = item;
       return acc;
@@ -362,7 +397,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   if (view === "dashboard") {
     const baseProductions: (ProductionDraft & { key: string; href: string })[] = [
       { key: "new-video", href: "/trends", title: selectedTopic ?? "신규 영상 제작", status: scenario ? "시나리오 완료" : topics ? "주제 선정" : research ? "리서치 완료" : "대기", meta: selectedTopic ? `근거 ${selectedSourceCount}개` : "트렌드 → 주제 → 시나리오" },
-      { key: "trend-issue", href: "/trends", title: "트렌드 기반 부동산 이슈", status: trends ? "트렌드 저장됨" : "미수집", meta: trends ? `${trends.period_label} · 뉴스 ${trends.news.length}건` : "트렌드분석에서 시작" },
+      { key: "trend-issue", href: "/trends", title: "트렌드 기반 부동산 이슈", status: trends ? "트렌드 저장됨" : "미수집", meta: trends ? `${trends.period_label ?? period} · 뉴스 ${trendNews.length}건` : "트렌드분석에서 시작" },
       { key: "richgo-topic", href: "/topics", title: "리치고 가치 반영 주제", status: topics ? "후보 생성" : "준비", meta: topics ? `${topics.recommended_topics.length}개 후보` : "주제자동화에서 고도화" },
     ];
     const productions = baseProductions
@@ -379,7 +414,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               <h2 className="mt-4 text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">리치고 유튜브 제작 대시보드</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">제작 리스트를 관리하고, 신규 영상 제작은 파이프라인 순서대로 진행합니다.</p>
             </div>
-            <a href="/trends" className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-navy px-5 py-3 text-sm font-semibold text-white">신규 영상 제작</a>
+            <button type="button" onClick={startNewVideo} className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-navy px-5 py-3 text-sm font-semibold text-white">신규 영상 제작</button>
           </div>
         </section>
 
@@ -497,7 +532,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-base font-semibold sm:text-lg">1. 실시간 트렌드 & 이슈 스캔</h2>
-              {trends && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500">{trends.period_label} · 뉴스 {trends.news.length}건 · YouTube {trends.youtube.length}건</span>}
+              {trends && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500">{trends.period_label ?? period} · 뉴스 {trendNews.length}건 · YouTube {trendYoutube.length}건</span>}
             </div>
             <p className="text-sm text-slate-500">트렌드 스캔부터 주제 후보까지 이어지는 첫 단계야. 모바일에서도 버튼이 먼저 보이게 정리했어.</p>
           </div>
