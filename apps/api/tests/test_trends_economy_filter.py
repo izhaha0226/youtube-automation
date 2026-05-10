@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from app.routes import trends as trends_route
+from app.modules.trend import scanner as trend_scanner
 from app.modules.trend.scanner import TrendSnapshot
 
 
@@ -41,7 +42,7 @@ def test_trends_scan_excludes_political_items_and_keywords(monkeypatch):
 
 def test_trends_period_controls_naver_and_fallback_timeline(monkeypatch):
     snap = TrendSnapshot(
-        youtube=[{"title": "금리 대출 아파트", "published": _pub(1), "source": "youtube_fallback"}],
+        youtube=[{"title": "금리 대출 아파트", "published": "1일 전", "source": "youtube_fallback"}],
         news=[{"title": "금리 대출 아파트", "pub": _pub(1), "source": "경제신문", "provider": "google", "query": "금리"}],
         community=[],
         internal=[],
@@ -59,4 +60,57 @@ def test_trends_period_controls_naver_and_fallback_timeline(monkeypatch):
     result = trends_route.trends_scan(period="7d")
 
     assert requested_days == [7]
-    assert len(result["charts"]["top3_timeline"]) == 8
+    assert len(result["charts"]["top3_timeline"]) == 7
+    assert result["source_sections"][2]["basis_value"] != "데이터 없음"
+
+
+def test_fetch_news_keeps_google_rss_when_naver_credentials_exist(monkeypatch):
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "items": [
+                    {
+                        "title": "서울 아파트 금리 뉴스",
+                        "originallink": "https://naver.example/news",
+                        "description": "대출 금리 기사",
+                        "pubDate": _pub(0),
+                    }
+                ]
+            }
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def get(self, *args, **kwargs):
+            return FakeResponse()
+
+    fake_feed = SimpleNamespace(
+        entries=[
+            SimpleNamespace(
+                title="구글 부동산 금리 이슈 - 경제신문",
+                link="https://news.google.com/rss/articles/google-1",
+                published=_pub(0),
+                source={"title": "경제신문"},
+            )
+        ]
+    )
+
+    monkeypatch.setattr(trend_scanner.settings, "naver_client_id", "naver-id")
+    monkeypatch.setattr(trend_scanner.settings, "naver_client_secret", "naver-secret")
+    monkeypatch.setattr(trend_scanner.httpx, "Client", FakeClient)
+    monkeypatch.setattr(trend_scanner.feedparser, "parse", lambda *args, **kwargs: fake_feed)
+
+    result = trend_scanner.fetch_news()
+    providers = {item.get("provider") for item in result}
+
+    assert "naver" in providers
+    assert "google" in providers

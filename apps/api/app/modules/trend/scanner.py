@@ -134,7 +134,12 @@ def fetch_youtube_trending(channel_id: str | None = None) -> list[dict]:
 
 
 def fetch_news() -> list[dict]:
-    """Prefer Naver News API if configured; fallback to Google News RSS."""
+    """Fetch Naver News when configured and always add Google News RSS.
+
+    The source-separated UI needs an independent Google section even when
+    Naver credentials are present.  Previously this function returned early
+    after Naver, so the Google source looked uncollected.
+    """
     items: list[dict] = []
     if settings.naver_client_id and settings.naver_client_secret:
         headers = {
@@ -168,11 +173,10 @@ def fetch_news() -> list[dict]:
                                     "query": q,
                                 }
                             )
-            return items
         except Exception as e:
             log.warning("trend.naver.error", error=str(e))
 
-    # Fallback: Google News RSS
+    # Google News RSS signal: keep this independent, not just a fallback.
     try:
         for q in ["부동산", "금리", "집값"]:
             feed = feedparser.parse(
@@ -203,7 +207,16 @@ def fetch_news() -> list[dict]:
                 )
     except Exception as e:
         log.warning("trend.rss.error", error=str(e))
-    return items
+
+    seen: set[tuple[str, str]] = set()
+    deduped: list[dict] = []
+    for item in items:
+        key = (item.get("title", "")[:60], item.get("provider", ""))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
 
 
 def fetch_community() -> list[dict]:

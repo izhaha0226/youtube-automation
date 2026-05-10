@@ -101,6 +101,25 @@ def extract_nouns(text: str) -> list[str]:
 def parse_any_datetime(raw: str | None) -> datetime | None:
     if not raw:
         return None
+    now = datetime.now(timezone.utc)
+    relative = re.search(r"(\d+)\s*(분|시간|일|주|개월|년)\s*전", raw)
+    if relative:
+        amount = int(relative.group(1))
+        unit = relative.group(2)
+        if unit == "분":
+            return now - timedelta(minutes=amount)
+        if unit == "시간":
+            return now - timedelta(hours=amount)
+        if unit == "일":
+            return now - timedelta(days=amount)
+        if unit == "주":
+            return now - timedelta(weeks=amount)
+        if unit == "개월":
+            return now - timedelta(days=amount * 30)
+        if unit == "년":
+            return now - timedelta(days=amount * 365)
+    if raw.strip() in {"오늘", "방금 전", "방금전"}:
+        return now
     try:
         dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
         return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
@@ -354,7 +373,7 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
                     daily[day][kw] += 1
         today = datetime.now(timezone.utc)
         timeline_days = max(days or 7, 1)
-        for i in range(timeline_days, -1, -1):
+        for i in range(timeline_days - 1, -1, -1):
             d = today - timedelta(days=i)
             day = d.strftime("%m/%d")
             entry: dict[str, str | int] = {"date": day}
