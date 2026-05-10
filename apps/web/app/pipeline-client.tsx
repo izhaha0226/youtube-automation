@@ -346,6 +346,20 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     setDeleteProductionKey(null);
   }
 
+  function getProductionResumeHref(itemHref: string) {
+    if (scenario) return "/scenario";
+    if (topics || selectedTopic) return "/topics";
+    if (research || trends) return "/trends";
+    return itemHref;
+  }
+
+  function resumeProduction(item: ProductionDraft & { key: string; href: string }) {
+    setSelectedProductionKey(item.key);
+    setDeleteProductionKey(null);
+    setEditingProductionKey(null);
+    window.location.href = getProductionResumeHref(item.href);
+  }
+
   const selectedSourceCount = selectedArticleIds.length + selectedVideoIds.length + selectedIssues.length;
   const trendSections = trends?.source_sections ?? [];
   const allTrendSourceItems = trendSections.flatMap((section) =>
@@ -460,10 +474,11 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           <div className="mt-4 space-y-3">
             {productions.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">삭제된 항목만 있습니다. 복구를 누르면 기본 제작 리스트가 다시 표시됩니다.</div>}
             {productions.map((item) => (
-              <button key={item.key} type="button" onClick={() => { setSelectedProductionKey(item.key); setDeleteProductionKey(null); }} className={`w-full rounded-2xl border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-blue-50/40" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
+              <button key={item.key} type="button" onClick={() => resumeProduction(item)} className={`w-full rounded-2xl border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-blue-50/40" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
                 <div>
                   <div className="text-sm font-semibold text-slate-900">{item.title}</div>
                   <div className="mt-1 text-xs text-slate-500">{item.meta}</div>
+                  <div className="mt-2 text-[11px] font-semibold text-blue-600">클릭하면 마지막 진행 단계로 이어가기</div>
                 </div>
                 <div className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-navy sm:mt-0">{item.status}</div>
               </button>
