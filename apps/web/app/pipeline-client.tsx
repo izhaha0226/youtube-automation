@@ -43,6 +43,7 @@ function patternLabel(pattern: string) {
 }
 
 type PipelineView = "dashboard" | "trends" | "topics" | "scenario";
+type ProductionDraft = { title: string; meta: string; status: string };
 
 export default function PipelineClient({ view = "dashboard" }: { view?: PipelineView }) {
   const [trends, setTrends] = useState<TrendData | null>(null);
@@ -75,6 +76,12 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const [showAllKeywords, setShowAllKeywords] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+  const [productionEdits, setProductionEdits] = useState<Record<string, ProductionDraft>>({});
+  const [hiddenProductionKeys, setHiddenProductionKeys] = useState<string[]>([]);
+  const [selectedProductionKey, setSelectedProductionKey] = useState<string>("new-video");
+  const [editingProductionKey, setEditingProductionKey] = useState<string | null>(null);
+  const [productionDraft, setProductionDraft] = useState<ProductionDraft>({ title: "", meta: "", status: "" });
+  const [deleteProductionKey, setDeleteProductionKey] = useState<string | null>(null);
 
   // 페이지 로드 시 세션 복원
   useEffect(() => {
@@ -95,6 +102,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       setResearch(saved.research ?? null);
       setSelectedArticleIds(saved.selectedArticleIds ?? []);
       setSelectedVideoIds(saved.selectedVideoIds ?? []);
+      setProductionEdits(saved.productionEdits ?? {});
+      setHiddenProductionKeys(saved.hiddenProductionKeys ?? []);
 
       const sessionId = saved.research?.session_id;
       if (sessionId) {
@@ -120,8 +129,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
   // 상태 변경 시 자동 저장
   useEffect(() => {
-    saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds });
-  }, [trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds]);
+    saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys });
+  }, [trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys]);
 
   async function scanTrends() {
     setLoadingTrend(true);
@@ -172,28 +181,6 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     }
   }
 
-  async function expandResearch() {
-    if (!research) return;
-    setLoadingResearch(true);
-    setError(null);
-    try {
-      const r = await fetch("/api/research/sessions/expand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: research.session_id, article_ids: selectedArticleIds, video_ids: selectedVideoIds }),
-      });
-      if (!r.ok) throw new Error(`Research Expand API: ${r.status}`);
-      setResearch(await r.json());
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoadingResearch(false);
-    }
-  }
-
-  function toggleArticle(id: string) {
-    setSelectedArticleIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  }
 
   function toggleVideo(id: string) {
     setSelectedVideoIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -252,7 +239,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       if (!r.ok) throw new Error(`Scenario API: ${r.status}`);
       const data = await r.json();
       setScenario(data);
-      saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario: data, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds });
+      saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario: data, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys });
       window.location.href = "/scenario";
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingScenario(false); }
@@ -271,6 +258,39 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     }
   }
 
+  function beginProductionEdit(item: ProductionDraft & { key: string }) {
+    setSelectedProductionKey(item.key);
+    setEditingProductionKey(item.key);
+    setDeleteProductionKey(null);
+    setProductionDraft({ title: item.title, meta: item.meta, status: item.status });
+  }
+
+  function saveProductionEdit() {
+    if (!editingProductionKey) return;
+    setProductionEdits((prev) => ({
+      ...prev,
+      [editingProductionKey]: {
+        title: productionDraft.title.trim() || "제목 없음",
+        meta: productionDraft.meta.trim() || "설명 없음",
+        status: productionDraft.status.trim() || "대기",
+      },
+    }));
+    setEditingProductionKey(null);
+  }
+
+  function deleteSelectedProduction() {
+    if (!deleteProductionKey) return;
+    setHiddenProductionKeys((prev) => prev.includes(deleteProductionKey) ? prev : [...prev, deleteProductionKey]);
+    setSelectedProductionKey("new-video");
+    setDeleteProductionKey(null);
+    setEditingProductionKey(null);
+  }
+
+  function restoreProductions() {
+    setHiddenProductionKeys([]);
+    setDeleteProductionKey(null);
+  }
+
   const selectedSourceCount = selectedArticleIds.length + selectedVideoIds.length + selectedIssues.length;
   const activeTrendSection = trends?.source_sections?.find((section) => section.id === selectedTrendSource) ?? trends?.source_sections?.[0] ?? null;
   const trendKeywordRows = trends?.keyword_map?.keywords ?? [];
@@ -286,11 +306,15 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const trendClusters = trends?.keyword_map?.clusters ?? [];
 
   if (view === "dashboard") {
-    const productions = [
-      { title: selectedTopic ?? "신규 영상 제작", status: scenario ? "시나리오 완료" : topics ? "주제 선정" : research ? "리서치 완료" : "대기", meta: selectedTopic ? `근거 ${selectedSourceCount}개` : "트렌드 → 주제 → 시나리오" },
-      { title: "트렌드 기반 부동산 이슈", status: trends ? "트렌드 저장됨" : "미수집", meta: trends ? `${trends.period_label} · 뉴스 ${trends.news.length}건` : "트렌드분석에서 시작" },
-      { title: "리치고 가치 반영 주제", status: topics ? "후보 생성" : "준비", meta: topics ? `${topics.recommended_topics.length}개 후보` : "주제자동화에서 고도화" },
+    const baseProductions: (ProductionDraft & { key: string; href: string })[] = [
+      { key: "new-video", href: "/trends", title: selectedTopic ?? "신규 영상 제작", status: scenario ? "시나리오 완료" : topics ? "주제 선정" : research ? "리서치 완료" : "대기", meta: selectedTopic ? `근거 ${selectedSourceCount}개` : "트렌드 → 주제 → 시나리오" },
+      { key: "trend-issue", href: "/trends", title: "트렌드 기반 부동산 이슈", status: trends ? "트렌드 저장됨" : "미수집", meta: trends ? `${trends.period_label} · 뉴스 ${trends.news.length}건` : "트렌드분석에서 시작" },
+      { key: "richgo-topic", href: "/topics", title: "리치고 가치 반영 주제", status: topics ? "후보 생성" : "준비", meta: topics ? `${topics.recommended_topics.length}개 후보` : "주제자동화에서 고도화" },
     ];
+    const productions = baseProductions
+      .filter((item) => !hiddenProductionKeys.includes(item.key))
+      .map((item) => ({ ...item, ...(productionEdits[item.key] ?? {}) }));
+    const selectedProduction = productions.find((item) => item.key === selectedProductionKey) ?? productions[0] ?? null;
 
     return (
       <div className="space-y-5">
@@ -313,21 +337,47 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
         <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-base font-semibold">제작 리스트</h3>
+            <div>
+              <h3 className="text-base font-semibold">제작 리스트</h3>
+              {selectedProduction && <p className="mt-1 text-xs text-slate-400">선택됨: {selectedProduction.title}</p>}
+            </div>
             <div className="flex gap-2 text-xs">
-              <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-500">수정</button>
-              <button className="rounded-lg border border-rose-100 px-3 py-1.5 text-rose-500">삭제</button>
+              {editingProductionKey ? (
+                <>
+                  <button onClick={saveProductionEdit} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700">저장</button>
+                  <button onClick={() => setEditingProductionKey(null)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-500">취소</button>
+                </>
+              ) : deleteProductionKey ? (
+                <>
+                  <button onClick={deleteSelectedProduction} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 font-semibold text-rose-600">삭제 확인</button>
+                  <button onClick={() => setDeleteProductionKey(null)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-500">취소</button>
+                </>
+              ) : (
+                <>
+                  <button disabled={!selectedProduction} onClick={() => selectedProduction && beginProductionEdit(selectedProduction)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-500 disabled:opacity-40">수정</button>
+                  <button disabled={!selectedProduction} onClick={() => selectedProduction && setDeleteProductionKey(selectedProduction.key)} className="rounded-lg border border-rose-100 px-3 py-1.5 text-rose-500 disabled:opacity-40">삭제</button>
+                </>
+              )}
+              {hiddenProductionKeys.length > 0 && <button onClick={restoreProductions} className="rounded-lg border border-blue-100 px-3 py-1.5 text-blue-600">복구</button>}
             </div>
           </div>
+          {editingProductionKey && (
+            <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3">
+              <label className="text-xs font-semibold text-slate-500">제목<input value={productionDraft.title} onChange={(e) => setProductionDraft((prev) => ({ ...prev, title: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-navy" /></label>
+              <label className="text-xs font-semibold text-slate-500">설명<input value={productionDraft.meta} onChange={(e) => setProductionDraft((prev) => ({ ...prev, meta: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-navy" /></label>
+              <label className="text-xs font-semibold text-slate-500">상태<input value={productionDraft.status} onChange={(e) => setProductionDraft((prev) => ({ ...prev, status: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-navy" /></label>
+            </div>
+          )}
           <div className="mt-4 space-y-3">
-            {productions.map((item, i) => (
-              <div key={i} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex sm:items-center sm:justify-between">
+            {productions.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">삭제된 항목만 있습니다. 복구를 누르면 기본 제작 리스트가 다시 표시됩니다.</div>}
+            {productions.map((item) => (
+              <button key={item.key} type="button" onClick={() => { setSelectedProductionKey(item.key); setDeleteProductionKey(null); }} className={`w-full rounded-2xl border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-blue-50/40" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
                 <div>
                   <div className="text-sm font-semibold text-slate-900">{item.title}</div>
                   <div className="mt-1 text-xs text-slate-500">{item.meta}</div>
                 </div>
                 <div className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-navy sm:mt-0">{item.status}</div>
-              </div>
+              </button>
             ))}
           </div>
         </section>
@@ -670,7 +720,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
       {/* ═══ Row 2: 입력 + 리서치 + 주제 추천 ═══ */}
       {view === "topics" && (
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+      <div className="space-y-5">
         <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
           <h2 className="text-base font-semibold">2. 선택 뉴스 기반 유튜브 찾기</h2>
           {selectedIssues.length > 0 && (
@@ -715,47 +765,9 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           </div>
           {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
         </section>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="space-y-4">
         <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
-          <h2 className="text-base font-semibold">3. 선택 뉴스</h2>
-          {!research && <div className="mt-6 text-center text-sm text-slate-400">트렌드분석에서 뉴스를 고른 뒤 [선택 뉴스로 관련 유튜브 찾기]를 누르세요.</div>}
-          {research && (
-            <div className="mt-3 space-y-3">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <div className="text-xs font-semibold text-slate-500">Source</div>
-                <div className="mt-1 text-sm font-semibold text-navy">{research.source.title || "입력 소스"}</div>
-                {research.source.summary && <p className="mt-1 text-xs text-slate-500 line-clamp-3">{research.source.summary}</p>}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
-                <span>기사 {research.articles.length}개</span>
-                <span>선택 {selectedArticleIds.length}개</span>
-              </div>
-              <div className="max-h-[420px] space-y-2 overflow-y-auto">
-                {research.articles.map((item) => {
-                  const selected = selectedArticleIds.includes(item.id);
-                  return (
-                    <div key={item.id} className={`rounded-lg border p-3 ${selected ? "border-navy bg-blue-50" : "border-slate-200 bg-white"}`}>
-                      <div className="flex items-start gap-2">
-                        <button onClick={() => toggleArticle(item.id)} className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[9px] ${selected ? "border-navy bg-navy text-white" : "border-slate-300"}`}>{selected ? "✓" : ""}</button>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-medium text-slate-800">{item.title}</div>
-                          <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
-                            {item.source && <span className="font-medium text-slate-500">{item.source}</span>}
-                            {item.published_at && <span>{formatDate(item.published_at)}</span>}
-                          </div>
-                          {item.url && <a href={item.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-[10px] text-blue-500 hover:underline">{item.url}</a>}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
-          <h2 className="text-base font-semibold">4. 관련 유튜브</h2>
+          <h2 className="text-base font-semibold">3. 관련 유튜브</h2>
           {!research && <div className="mt-6 text-center text-sm text-slate-400">리서치 후 관련 유튜브를 여기서 따로 선택해.</div>}
           {research && (
             <>
@@ -802,12 +814,11 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       </div>
 
       <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
-        <h2 className="text-base font-semibold">5. 선택 영상 분석 → 주제 만들기</h2>
+        <h2 className="text-base font-semibold">4. 선택 영상 분석 → 주제 만들기</h2>
         {!research && !topics && <div className="mt-6 text-center text-sm text-slate-400">관련 유튜브를 고른 뒤 분석 버튼을 눌러 우리 주제를 만듭니다.</div>}
         {research && (
-          <div className="mt-3 flex gap-2">
-            <button onClick={expandResearch} disabled={loadingResearch || (!selectedArticleIds.length && !selectedVideoIds.length)} className="flex-1 rounded-lg border border-slate-300 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40">관련 기사/영상 더 찾기</button>
-            <button disabled={loadingTopic || (!intent && !selectedArticleIds.length && !selectedVideoIds.length && selectedIssues.length === 0)} onClick={analyze} className="flex-1 rounded-lg bg-navy py-2 text-sm font-semibold text-white disabled:opacity-40">{loadingTopic ? "분석 중..." : "선택 영상 분석해서 주제 만들기"}</button>
+          <div className="mt-3">
+            <button disabled={loadingTopic || (!intent && !selectedArticleIds.length && !selectedVideoIds.length && selectedIssues.length === 0)} onClick={analyze} className="w-full rounded-lg bg-navy py-2 text-sm font-semibold text-white disabled:opacity-40">{loadingTopic ? "분석 중..." : "선택 영상 분석해서 주제 만들기"}</button>
           </div>
         )}
         {topics && (

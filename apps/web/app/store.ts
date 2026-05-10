@@ -99,6 +99,8 @@ export type DashboardState = {
   research?: ResearchSession | null;
   selectedArticleIds?: string[];
   selectedVideoIds?: string[];
+  productionEdits?: Record<string, { title: string; meta: string; status: string }>;
+  hiddenProductionKeys?: string[];
 };
 
 const STORAGE_KEY = "yt-auto-dashboard";
