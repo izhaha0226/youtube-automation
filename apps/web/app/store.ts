@@ -51,6 +51,14 @@ type TopicCandidate = {
   score: { popularity: number; economy: number; realestate: number; virality: number; richgo_fit: number; discussion: number };
   archetype?: "경고형" | "판단형" | "기회형" | "구조해설형" | "원칙형";
   keywords: string[];
+  discovery_hypothesis?: string;
+  strategy_hypothesis?: string;
+  tactical_hypothesis?: string;
+  verification_signals?: string[];
+  failure_criteria?: string[];
+  decision_label?: "scale" | "iterate" | "stop" | "data_missing";
+  next_loop?: string;
+  hypothesis_payload?: Record<string, unknown>;
 };
 type TopicResult = { recommended_topics: TopicCandidate[]; selected_topic: string; selected_reason: string; selected_archetype?: TopicCandidate["archetype"] };
 type ScenarioSection = { heading: string; script: string };

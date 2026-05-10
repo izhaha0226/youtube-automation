@@ -233,6 +233,14 @@ class TopicRecommendation(SQLModel, table=True):
     score_hexagon: dict[str, int] = Field(default_factory=dict, sa_column=Column(JSON))
     total_score: int = 0
     richgo_value: str = ""
+    discovery_hypothesis: str = ""
+    strategy_hypothesis: str = ""
+    tactical_hypothesis: str = ""
+    verification_signals: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    failure_criteria: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    decision_label: str = Field(default="data_missing", index=True)
+    next_loop: str = ""
+    hypothesis_payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     selected: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

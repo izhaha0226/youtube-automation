@@ -51,6 +51,9 @@ def select_topic(payload: TopicInput) -> TopicResult:
         score = TopicScore(**c.get("score", {}))
         if score.total() < threshold_recommend:
             continue
+        decision_label = c.get("decision_label")
+        if decision_label not in {"scale", "iterate", "stop", "data_missing"}:
+            decision_label = "scale" if score.total() >= 24 else "iterate" if score.total() >= threshold_recommend else "stop"
         candidates.append(
             TopicCandidate(
                 title=c.get("title", ""),
@@ -59,6 +62,14 @@ def select_topic(payload: TopicInput) -> TopicResult:
                 archetype=c.get("archetype", "판단형"),
                 risk=c.get("risk", ""),
                 keywords=c.get("keywords", []),
+                discovery_hypothesis=c.get("discovery_hypothesis", c.get("reason", "")),
+                strategy_hypothesis=c.get("strategy_hypothesis", c.get("reason", "")),
+                tactical_hypothesis=c.get("tactical_hypothesis", c.get("risk", "")),
+                verification_signals=c.get("verification_signals", []),
+                failure_criteria=c.get("failure_criteria", []),
+                decision_label=decision_label,
+                next_loop=c.get("next_loop", ""),
+                hypothesis_payload=c.get("hypothesis_payload", {}),
             )
         )
     candidates.sort(key=lambda c: c.score.total(), reverse=True)

@@ -262,6 +262,15 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     return s.popularity + s.economy + s.realestate + s.virality + s.richgo_fit + s.discussion;
   }
 
+  function labelTone(label?: TopicCandidate["decision_label"]) {
+    switch (label) {
+      case "scale": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "iterate": return "bg-blue-50 text-blue-700 border-blue-200";
+      case "stop": return "bg-rose-50 text-rose-700 border-rose-200";
+      default: return "bg-slate-100 text-slate-500 border-slate-200";
+    }
+  }
+
   const selectedSourceCount = selectedArticleIds.length + selectedVideoIds.length + selectedIssues.length;
   const activeTrendSection = trends?.source_sections?.find((section) => section.id === selectedTrendSource) ?? trends?.source_sections?.[0] ?? null;
   const trendKeywordRows = trends?.keyword_map?.keywords ?? [];
@@ -402,15 +411,9 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                 <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="rounded border border-slate-300 px-2 py-0.5 text-xs" />
               </div>
             )}
-            <button onClick={scanTrends} disabled={loadingTrend} className="rounded-lg bg-navy px-4 py-1 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-40">
+            <button onClick={scanTrends} disabled={loadingTrend} className="rounded-lg bg-blue-600 px-4 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40">
               {loadingTrend ? "스캔 중..." : "트렌드 스캔 실행"}
             </button>
-            <a
-              href="/topics"
-              className={`rounded-lg px-4 py-1 text-center text-xs font-semibold ${selectedIssues.length ? "bg-emerald-600 text-white hover:bg-emerald-700" : "pointer-events-none bg-slate-100 text-slate-400"}`}
-            >
-              선택 뉴스로 다음
-            </a>
           </div>
         </div>
 
@@ -526,6 +529,15 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                         );
                       })}
                     </div>
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                      <div className="mb-2 text-[11px] text-emerald-800">뉴스를 선택한 뒤 다음 단계로 넘어가 관련 유튜브를 찾습니다. 현재 선택 {selectedIssues.length}건</div>
+                      <a
+                        href="/topics"
+                        className={`block rounded-lg px-4 py-2 text-center text-xs font-semibold ${selectedIssues.length ? "bg-emerald-600 text-white hover:bg-emerald-700" : "pointer-events-none bg-white text-slate-400"}`}
+                      >
+                        선택한 뉴스로 다음 단계 이동
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
@@ -534,10 +546,10 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                   <div className="mb-2 text-xs font-semibold text-slate-600">키워드 차트 Top 10</div>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={keywordFrequencyRows} layout="vertical" margin={{ left: 90, right: 10 }}>
+                    <BarChart data={keywordFrequencyRows} layout="vertical" margin={{ left: 145, right: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis type="number" tick={{ fontSize: 10 }} />
-                      <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={85} />
+                      <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={140} />
                       <Tooltip contentStyle={{ fontSize: 11 }} />
                       <Bar dataKey="count" fill="#0E1E3A" radius={[0, 4, 4, 0]} barSize={14} />
                     </BarChart>
@@ -545,7 +557,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                 </div>
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="mb-2 text-xs font-semibold text-slate-600">상관관계 강한 키워드 페어</div>
+                  <div className="mb-1 text-xs font-semibold text-slate-600">함께 자주 언급된 키워드</div>
+                  <div className="mb-2 text-[10px] text-slate-400">같은 뉴스/영상 안에서 함께 나온 키워드 조합입니다.</div>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={trendCorrelationRows} layout="vertical" margin={{ left: 88, right: 12 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -812,6 +825,20 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                   <h3 className="mt-0.5 text-xs font-bold leading-snug text-navy">{t.title}</h3>
                   <div className="mt-1 text-base font-bold text-navy">Score: {score}점</div>
                   <p className="mt-1 line-clamp-2 text-[10px] text-slate-500">{t.reason}</p>
+                  <div className="mt-2 grid gap-2 text-[10px] text-slate-600">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-2">
+                      <div className="font-semibold text-slate-500">가설 카드</div>
+                      <p className="mt-1 line-clamp-2">{t.discovery_hypothesis || t.strategy_hypothesis || t.reason}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-2">
+                      <div className="font-semibold text-slate-500">검증 카드</div>
+                      <p className="mt-1 line-clamp-2">{(t.verification_signals ?? []).length ? (t.verification_signals ?? []).join(" · ") : "CTR / 유지율 / 댓글 / 저장 / 공유 / 전환"}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-2">
+                      <div className="font-semibold text-slate-500">판정 라벨</div>
+                      <div className={`mt-1 inline-flex rounded-full border px-2 py-0.5 font-semibold ${labelTone(t.decision_label)}`}>{t.decision_label ?? "data_missing"}</div>
+                    </div>
+                  </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5">총점 {score}</span>
                     {t.archetype && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">{t.archetype}</span>}
@@ -826,18 +853,44 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           </div>
         )}
         {topics && selectedTopic && (
-          <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-[10px] font-semibold text-blue-500">선택된 우리 주제</div>
-              <div className="mt-1 text-sm font-bold text-navy">{selectedTopic}</div>
+          <div className="mt-4 space-y-3 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-[10px] font-semibold text-blue-500">선택된 우리 주제</div>
+                <div className="mt-1 text-sm font-bold text-navy">{selectedTopic}</div>
+              </div>
+              <button
+                onClick={generateScenario}
+                disabled={loadingScenario}
+                className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              >
+                {loadingScenario ? "시나리오 생성 중..." : "시나리오 뽑기"}
+              </button>
             </div>
-            <button
-              onClick={generateScenario}
-              disabled={loadingScenario}
-              className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-            >
-              {loadingScenario ? "시나리오 생성 중..." : "시나리오 뽑기"}
-            </button>
+            {(() => {
+              const selected = topics.recommended_topics.find((item) => item.title === selectedTopic);
+              if (!selected) return null;
+              return (
+                <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+                  <div className="rounded-xl border border-white bg-white/80 p-3">
+                    <div className="font-semibold text-slate-500">가설 카드</div>
+                    <p className="mt-1 leading-relaxed">{selected.discovery_hypothesis || selected.strategy_hypothesis || selected.reason}</p>
+                  </div>
+                  <div className="rounded-xl border border-white bg-white/80 p-3">
+                    <div className="font-semibold text-slate-500">검증 카드</div>
+                    <p className="mt-1 leading-relaxed">{(selected.verification_signals ?? []).length ? (selected.verification_signals ?? []).join(" · ") : "CTR / 유지율 / 댓글 / 저장 / 공유 / 전환"}</p>
+                  </div>
+                  <div className="rounded-xl border border-white bg-white/80 p-3">
+                    <div className="font-semibold text-slate-500">판정 라벨</div>
+                    <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${labelTone(selected.decision_label)}`}>{selected.decision_label ?? "data_missing"}</span>
+                  </div>
+                  <div className="rounded-xl border border-white bg-white/80 p-3 sm:col-span-3">
+                    <div className="font-semibold text-slate-500">다음 루프 / 실패 기준</div>
+                    <p className="mt-1 leading-relaxed">{selected.next_loop || (selected.failure_criteria ?? []).join(" · ") || "다음 루프는 선택된 영상의 실제 성과로 재검증한다."}</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </section>

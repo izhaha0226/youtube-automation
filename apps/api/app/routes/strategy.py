@@ -89,6 +89,14 @@ def topic_to_response(topic: TopicRecommendation) -> TopicRecommendationResponse
         score_hexagon=topic.score_hexagon,
         total_score=topic.total_score,
         richgo_value=topic.richgo_value,
+        discovery_hypothesis=topic.discovery_hypothesis,
+        strategy_hypothesis=topic.strategy_hypothesis,
+        tactical_hypothesis=topic.tactical_hypothesis,
+        verification_signals=topic.verification_signals,
+        failure_criteria=topic.failure_criteria,
+        decision_label=topic.decision_label,
+        next_loop=topic.next_loop,
+        hypothesis_payload=topic.hypothesis_payload,
         selected=topic.selected,
     )
 
@@ -195,7 +203,7 @@ def strategy_schema() -> StrategySchemaResponse:
         {"name": "trend_validation", "purpose": "네이버/구글/뉴스/유튜브 검증 점수"},
         {"name": "news_article", "purpose": "관련 기사 리스트와 관점/요약"},
         {"name": "you_tube_benchmark", "purpose": "관련 유튜브 벤치마크와 성공요인"},
-        {"name": "topic_recommendation", "purpose": "리치고 철학 기반 3개 주제와 6각형 점수"},
+        {"name": "topic_recommendation", "purpose": "리치고 철학 기반 3개 주제와 6각형 점수 + hypothesis loop"},
         {"name": "scenario_version", "purpose": "선택 주제의 시나리오 버전 기록"},
         {"name": "user_selection", "purpose": "사용자 선택/판단 audit log"},
     ]
@@ -355,6 +363,14 @@ def add_topic(session_id: str, payload: TopicRecommendationCreate, db: Session =
         score_hexagon=score_hexagon,
         total_score=sum(score_hexagon[key] for key in SCORE_KEYS),
         richgo_value=payload.richgo_value,
+        discovery_hypothesis=payload.discovery_hypothesis,
+        strategy_hypothesis=payload.strategy_hypothesis,
+        tactical_hypothesis=payload.tactical_hypothesis,
+        verification_signals=payload.verification_signals,
+        failure_criteria=payload.failure_criteria,
+        decision_label=payload.decision_label,
+        next_loop=payload.next_loop,
+        hypothesis_payload=payload.hypothesis_payload,
     )
     db.add(topic)
     db.commit()

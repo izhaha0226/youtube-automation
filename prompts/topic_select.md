@@ -25,6 +25,14 @@
 - 이번 추천에서 각 후보마다 정확히 1개의 archetype을 붙여라.
 - archetype 후보는 다음 5개만 허용한다: `경고형`, `판단형`, `기회형`, `구조해설형`, `원칙형`
 - selected_archetype은 selected_topic과 반드시 일치해야 한다.
+- 각 후보에는 반드시 아래 가설 루프 필드를 포함하라.
+  - discovery_hypothesis: 이 주제를 지금 발굴해야 하는 이유
+  - strategy_hypothesis: 이 주제를 채널/브랜드 전략에 어떻게 연결할지
+  - tactical_hypothesis: 실제 촬영/편집/배포에서 어떤 전술로 풀지
+  - verification_signals: 검증 가능한 보상 신호 목록(CTR, 유지율, 댓글, 저장, 공유, 구독 전환, 문의 유입, 비즈니스 기여 등)
+  - failure_criteria: 실패 판정 기준
+  - decision_label: `scale | iterate | stop | data_missing`
+  - next_loop: 다음 루프에서 무엇을 재검증할지
 
 ## 리치고TV 판단 원칙
 1. 단순 뉴스 요약 금지. 시청자가 "그래서 내 돈, 내 집, 내 지역에 무슨 영향이 있는데?"를 바로 느껴야 한다.
@@ -84,7 +92,15 @@ JSON만 출력:
       },
       "risk": "다룰 때 주의할 오해/한계",
       "archetype": "경고형 | 판단형 | 기회형 | 구조해설형 | 원칙형",
-      "keywords": ["핵심 키워드", "검색 키워드"]
+      "keywords": ["핵심 키워드", "검색 키워드"],
+      "discovery_hypothesis": "이 주제를 지금 발굴해야 하는 이유",
+      "strategy_hypothesis": "채널/브랜드 전략 연결",
+      "tactical_hypothesis": "촬영/편집/배포 전술",
+      "verification_signals": ["CTR", "유지율", "댓글"],
+      "failure_criteria": ["기준 미달 조건"],
+      "decision_label": "scale | iterate | stop | data_missing",
+      "next_loop": "다음 루프에서 재검증할 것",
+      "hypothesis_payload": {}
     }
   ],
   "selected_topic": "최종 권장 주제",

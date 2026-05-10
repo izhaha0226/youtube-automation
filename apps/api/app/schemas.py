@@ -44,6 +44,14 @@ class TopicCandidate(BaseModel):
     archetype: ContentArchetype = "판단형"
     risk: str = ""
     keywords: list[str] = Field(default_factory=list)
+    discovery_hypothesis: str = ""
+    strategy_hypothesis: str = ""
+    tactical_hypothesis: str = ""
+    verification_signals: list[str] = Field(default_factory=list)
+    failure_criteria: list[str] = Field(default_factory=list)
+    decision_label: Literal["scale", "iterate", "stop", "data_missing"] = "data_missing"
+    next_loop: str = ""
+    hypothesis_payload: dict = Field(default_factory=dict)
 
 
 class TopicResult(BaseModel):
@@ -298,6 +306,14 @@ class TopicRecommendationCreate(BaseModel):
     angle: str = ""
     score_hexagon: StrategyHexagonScore
     richgo_value: str = "시청자가 시장을 감정이 아니라 데이터와 원칙으로 보게 만든다."
+    discovery_hypothesis: str = ""
+    strategy_hypothesis: str = ""
+    tactical_hypothesis: str = ""
+    verification_signals: list[str] = Field(default_factory=list)
+    failure_criteria: list[str] = Field(default_factory=list)
+    decision_label: Literal["scale", "iterate", "stop", "data_missing"] = "data_missing"
+    next_loop: str = ""
+    hypothesis_payload: dict = Field(default_factory=dict)
 
 
 class TopicRecommendationResponse(BaseModel):
@@ -309,6 +325,14 @@ class TopicRecommendationResponse(BaseModel):
     score_hexagon: dict
     total_score: int
     richgo_value: str
+    discovery_hypothesis: str = ""
+    strategy_hypothesis: str = ""
+    tactical_hypothesis: str = ""
+    verification_signals: list[str] = Field(default_factory=list)
+    failure_criteria: list[str] = Field(default_factory=list)
+    decision_label: Literal["scale", "iterate", "stop", "data_missing"] = "data_missing"
+    next_loop: str = ""
+    hypothesis_payload: dict = Field(default_factory=dict)
     selected: bool = False
 
 

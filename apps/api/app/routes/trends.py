@@ -50,13 +50,47 @@ KEYWORD_CLUSTERS: dict[str, list[str]] = {
     "지역·교통": [
         "서울", "강남", "잠실", "용산", "마포", "송파", "GTX", "반도체", "클러스터", "토지거래허가구역",
     ],
-    "정치·선거": [
-        "여야", "대선", "지방선거", "공약", "민주당", "국민의힘", "의회", "법안", "선거", "정책대결",
-    ],
 }
 
 CLUSTER_BY_KEYWORD = {keyword: cluster for cluster, keywords in KEYWORD_CLUSTERS.items() for keyword in keywords}
 SUPPLEMENTAL_KEYWORDS = [kw for keywords in KEYWORD_CLUSTERS.values() for kw in keywords]
+
+POLITICAL_TERMS = {
+    "대선", "총선", "지방선거", "보궐선거", "선거", "후보", "유세", "출마", "공천",
+    "선거사무소", "당대표", "원내대표", "대통령", "국회", "의회", "정당", "여야",
+    "민주당", "국민의힘", "조국혁신당", "개혁신당", "이재명", "윤석열", "한동훈", "장동혁",
+    "오세훈", "정원오", "홍준표", "김문수", "안철수", "유승민", "이준석", "나경원",
+    "탄핵", "특검", "정쟁", "정계", "정치권",
+}
+
+ECONOMIC_TERMS = {
+    "경제", "금리", "기준금리", "대출", "주담대", "전세대출", "정책대출", "DSR", "LTV",
+    "집값", "부동산", "아파트", "전세", "월세", "매매", "청약", "분양", "미분양",
+    "재건축", "재개발", "공급", "세금", "양도세", "종부세", "취득세", "규제", "완화",
+    "정책", "환율", "주식", "증시", "코스피", "코스닥", "연준", "Fed", "달러", "물가", "CPI",
+    "GDP", "무역", "부채", "PF", "임대차", "보증금", "GTX", "토지거래허가구역",
+}
+
+
+def is_political_text(text: str) -> bool:
+    normalized = text.replace(" ", "")
+    return any(term in text or term in normalized for term in POLITICAL_TERMS)
+
+
+def is_economic_text(text: str) -> bool:
+    return any(term in text for term in ECONOMIC_TERMS)
+
+
+def filter_economic_items(items: list[dict]) -> list[dict]:
+    filtered: list[dict] = []
+    for item in items:
+        text = " ".join(str(item.get(key, "")) for key in ("title", "desc", "query", "source"))
+        if is_political_text(text):
+            continue
+        if not is_economic_text(text):
+            continue
+        filtered.append(item)
+    return filtered
 
 
 def extract_nouns(text: str) -> list[str]:
@@ -279,12 +313,13 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
         except ValueError:
             days = 7
 
-    yt_filtered = filter_by_period(snap.youtube, "published", days)
-    news_filtered = filter_by_period(snap.news, "pub", days)
+    yt_filtered = filter_economic_items(filter_by_period(snap.youtube, "published", days))
+    news_filtered = filter_economic_items(filter_by_period(snap.news, "pub", days))
+    community_filtered = filter_economic_items(filter_by_period(snap.community, "pub", days))
     naver_news = [item for item in news_filtered if infer_news_provider(item) == "naver"]
     google_news = [item for item in news_filtered if infer_news_provider(item) == "google"]
 
-    docs = make_documents(("naver", naver_news), ("google", google_news), ("youtube", yt_filtered), ("community", snap.community))
+    docs = make_documents(("naver", naver_news), ("google", google_news), ("youtube", yt_filtered), ("community", community_filtered))
     noun_freq: Counter = Counter()
     for doc in docs:
         for keyword in doc["keywords"]:
@@ -301,12 +336,12 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
     ]
 
     top3 = [item["keyword"] for item in keyword_chart[:3]]
-    timeline_data = fetch_search_trend(top3, days=30) if top3 else []
+    timeline_data = fetch_search_trend(top3, days=days or 7) if top3 else []
     timeline_source = "Naver DataLab 검색어 트렌드 API" if timeline_data else ""
 
     if not timeline_data and top3:
         daily: dict[str, dict[str, int]] = {}
-        for item in snap.youtube + snap.news:
+        for item in yt_filtered + news_filtered:
             dt = parse_any_datetime(item.get("published") or item.get("pub"))
             if not dt:
                 continue
@@ -318,7 +353,8 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
                 if kw in title:
                     daily[day][kw] += 1
         today = datetime.now(timezone.utc)
-        for i in range(30, -1, -1):
+        timeline_days = max(days or 7, 1)
+        for i in range(timeline_days, -1, -1):
             d = today - timedelta(days=i)
             day = d.strftime("%m/%d")
             entry: dict[str, str | int] = {"date": day}
@@ -343,7 +379,7 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
         "period_label": period_label.get(period, period),
         "youtube": yt_filtered[:15],
         "news": news_filtered[:15],
-        "community": snap.community[:5],
+        "community": community_filtered[:5],
         "internal": snap.internal[:10],
         "keywords": [row["keyword"] for row in keyword_map["keywords"][:30]],
         "benchmarks": benchmarks[:20],
