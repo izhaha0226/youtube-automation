@@ -71,3 +71,35 @@ def test_select_topic_keeps_selected_topic_inside_filtered_recommendations(monke
     assert selected.decision_label == "iterate"
     assert selected.next_loop
     assert selected.hypothesis_payload == {"source": "unit-test"}
+
+
+def test_select_topic_rewrites_news_copy_title_into_hook_topic(monkeypatch):
+    source_title = "서울 아파트 전세대출 금리 다시 오른다"
+    payload = {
+        "recommended_topics": [
+            _candidate(
+                source_title,
+                24,
+                discovery_hypothesis="전세대출 금리 이슈가 실수요 판단에 직접 영향을 준다.",
+                strategy_hypothesis="뉴스를 리치고 데이터 기반 판단 프레임으로 재구성한다.",
+                tactical_hypothesis="첫 30초에 금리-월상환액-집값 선택지를 제시한다.",
+                verification_signals=["CTR", "유지율", "댓글"],
+                failure_criteria=["뉴스 복붙 반응", "CTR 저조"],
+                decision_label="scale",
+                next_loop="제목 후킹 각도와 유지율을 비교한다.",
+            )
+        ],
+        "selected_topic": source_title,
+        "selected_reason": "뉴스 제목을 그대로 낸 잘못된 LLM 응답",
+        "selected_archetype": "판단형",
+    }
+    monkeypatch.setattr(selector, "llm", lambda temperature=0.5: FakeLLM(payload))
+
+    result = selector.select_topic(
+        TopicInput(current_issues=[f"[ARTICLE] {source_title}"], trend_keywords=["금리", "아파트", "전세대출"])
+    )
+
+    assert result.selected_topic != source_title
+    assert result.recommended_topics[0].title == result.selected_topic
+    assert "뉴스 제목은 이게 아닙니다" in result.selected_topic
+    assert "내 집값" in result.selected_topic

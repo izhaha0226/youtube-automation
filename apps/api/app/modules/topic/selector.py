@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import difflib
 import html
 import json
+import re
 
 from app.core.config import settings
 from app.core.llm import LLMError, llm
@@ -59,17 +61,22 @@ def select_topic(payload: TopicInput) -> TopicResult:
     threshold_recommend = rules.get("thresholds", {}).get("recommend", 18)
     top_k = rules.get("top_k", 3)
 
+    source_titles = _source_titles(current_issues, selected_videos)
+    raw_to_title: dict[str, str] = {}
     candidates = []
-    for c in data.get("recommended_topics", []):
+    for idx, c in enumerate(data.get("recommended_topics", [])):
         score = TopicScore(**c.get("score", {}))
         if score.total() < threshold_recommend:
             continue
         decision_label = c.get("decision_label")
         if decision_label not in {"scale", "iterate", "stop", "data_missing"}:
             decision_label = "scale" if score.total() >= 24 else "iterate" if score.total() >= threshold_recommend else "stop"
+        raw_title = c.get("title", "")
+        title = _rewrite_if_source_copy(raw_title, source_titles, trend_keywords, idx)
+        raw_to_title[raw_title] = title
         candidates.append(
             TopicCandidate(
-                title=c.get("title", ""),
+                title=title,
                 reason=c.get("reason", ""),
                 score=score,
                 archetype=c.get("archetype", "판단형"),
@@ -89,6 +96,7 @@ def select_topic(payload: TopicInput) -> TopicResult:
     candidates = candidates[:top_k]
 
     selected = data.get("selected_topic") or (candidates[0].title if candidates else "")
+    selected = raw_to_title.get(selected, selected)
     selected_candidate = next((candidate for candidate in candidates if candidate.title == selected), None)
     selected_was_filtered = selected_candidate is None and bool(candidates)
     if selected_was_filtered:
@@ -119,10 +127,11 @@ def _fallback_topic_result(payload: TopicInput, current_issues: list[str], trend
     primary_issue = _clean_issue(current_issues[0]) if current_issues else (payload.user_intent or "오늘 부동산 시장 핵심 변화")
     keywords = list(dict.fromkeys([kw for kw in trend_keywords[:8] if kw])) or ["부동산", "금리", "아파트"]
     focus = " · ".join(keywords[:3])
+    anchor = _topic_anchor(primary_issue, keywords)
     templates = [
-        ("판단형", f"{primary_issue}, 지금 사도 되는지 기다려야 하는지 판단 기준 3가지"),
-        ("구조해설형", f"{focus} 신호로 보는 이번 부동산 시장 변화의 진짜 이유"),
-        ("기회형", f"남들은 불안해할 때 기회가 생기는 조건, {keywords[0]}에서 확인해야 할 것"),
+        ("판단형", f"뉴스 제목은 이게 아닙니다, {anchor}에서 내 집값을 가르는 숫자 3가지"),
+        ("구조해설형", f"다들 {keywords[0]}만 보지만 진짜 신호는 따로 있습니다"),
+        ("기회형", f"불안한 사람은 놓치고 준비한 사람은 보는 {focus}의 반전 조건"),
     ]
     candidates: list[TopicCandidate] = []
     for idx, (archetype, title) in enumerate(templates):
@@ -152,6 +161,62 @@ def _fallback_topic_result(payload: TopicInput, current_issues: list[str], trend
         video_analyses=video_analyses,
         production_application=production_application,
     )
+
+
+def _source_titles(current_issues: list[str], selected_videos: list[dict]) -> list[str]:
+    titles = [_clean_issue(issue) for issue in current_issues if issue]
+    titles.extend(str(video.get("title") or "") for video in selected_videos)
+    return [title.strip() for title in titles if title and title.strip()]
+
+
+def _normalize_title_for_similarity(title: str) -> str:
+    title = html.unescape(str(title or "")).lower()
+    title = re.sub(r"\[(article|video)\]", "", title)
+    title = re.sub(r"[^0-9a-z가-힣]+", "", title)
+    return title
+
+
+def _is_source_copy(title: str, source_titles: list[str]) -> bool:
+    normalized = _normalize_title_for_similarity(title)
+    if len(normalized) < 6:
+        return False
+    for source in source_titles:
+        source_norm = _normalize_title_for_similarity(source)
+        if len(source_norm) < 6:
+            continue
+        if normalized == source_norm:
+            return True
+        if normalized in source_norm or source_norm in normalized:
+            return True
+        if difflib.SequenceMatcher(None, normalized, source_norm).ratio() >= 0.72:
+            return True
+    return False
+
+
+def _topic_anchor(source_title: str, keywords: list[str]) -> str:
+    cleaned = _clean_issue(source_title)
+    for token in ["...", "…", "｜", "|", "-", "—", ":"]:
+        cleaned = cleaned.split(token)[0]
+    words = re.findall(r"[0-9A-Za-z가-힣]+", cleaned)
+    stopwords = {"속보", "단독", "종합", "영상", "뉴스", "오늘", "이번", "관련", "발표"}
+    meaningful = [word for word in words if word not in stopwords]
+    if len(meaningful) >= 2:
+        return " ".join(meaningful[:4])
+    return " · ".join(keywords[:2]) if keywords else "부동산 시장"
+
+
+def _rewrite_if_source_copy(title: str, source_titles: list[str], keywords: list[str], index: int) -> str:
+    title = str(title or "").strip()
+    if not _is_source_copy(title, source_titles):
+        return title
+    anchor = _topic_anchor(source_titles[0] if source_titles else title, keywords)
+    key = keywords[index % len(keywords)] if keywords else "부동산"
+    templates = [
+        f"뉴스 제목은 이게 아닙니다, {anchor}에서 내 집값을 가르는 숫자 3가지",
+        f"다들 {key}만 보고 있습니다, 진짜 돈의 방향은 이 신호에서 갈립니다",
+        f"지금 불안한 사람이 놓치는 것, {anchor} 뒤에 숨은 반전 조건",
+    ]
+    return templates[index % len(templates)]
 
 
 def _build_video_analyses(raw_analyses: object, selected_videos: list[dict]) -> list[TopicVideoAnalysis]:

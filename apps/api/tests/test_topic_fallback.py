@@ -20,5 +20,6 @@ def test_select_topic_returns_deterministic_fallback_when_llm_unavailable(monkey
 
     assert len(result.recommended_topics) == 3
     assert result.selected_topic == result.recommended_topics[0].title
-    assert "서울 아파트 전세대출 금리" in result.selected_topic
+    assert result.selected_topic != "서울 아파트 전세대출 금리 다시 오른다"
+    assert "내 집값" in result.selected_topic or "진짜 신호" in result.selected_topic
     assert result.selected_archetype == "판단형"
