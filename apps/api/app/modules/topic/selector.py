@@ -9,7 +9,7 @@ from app.core.logging import get_logger
 from app.core.prompts import load_prompt, render
 from app.modules.richgo.editorial import content_archetype_context, editorial_rules_context, philosophy_context
 from app.modules.trend.scanner import scan  # used as fallback when no pre-fetched data
-from app.schemas import TopicCandidate, TopicInput, TopicResult, TopicScore
+from app.schemas import TopicCandidate, TopicInput, TopicProductionApplication, TopicResult, TopicScore, TopicVideoAnalysis
 
 log = get_logger(__name__)
 MAX_SELECTED_VIDEOS = 3
@@ -104,6 +104,8 @@ def select_topic(payload: TopicInput) -> TopicResult:
         selected_topic=selected,
         selected_reason=reason,
         selected_archetype=selected_archetype,
+        video_analyses=_build_video_analyses(data.get("video_analyses"), selected_videos),
+        production_application=_build_production_application(data.get("production_application"), selected_videos),
     )
     log.info("topic.select.done", count=len(candidates), selected=selected)
     return result
@@ -111,6 +113,9 @@ def select_topic(payload: TopicInput) -> TopicResult:
 
 def _fallback_topic_result(payload: TopicInput, current_issues: list[str], trend_keywords: list[str]) -> TopicResult:
     """Deterministic fallback so /api/topics does not 503 when Codex/LLM is unavailable."""
+    selected_videos = [_normalize_video_source(v) for v in payload.selected_videos if _normalize_video_source(v)]
+    video_analyses = _build_video_analyses(None, selected_videos)
+    production_application = _build_production_application(None, selected_videos)
     primary_issue = _clean_issue(current_issues[0]) if current_issues else (payload.user_intent or "오늘 부동산 시장 핵심 변화")
     keywords = list(dict.fromkeys([kw for kw in trend_keywords[:8] if kw])) or ["부동산", "금리", "아파트"]
     focus = " · ".join(keywords[:3])
@@ -144,7 +149,79 @@ def _fallback_topic_result(payload: TopicInput, current_issues: list[str], trend
         selected_topic=candidates[0].title,
         selected_reason=candidates[0].reason,
         selected_archetype=candidates[0].archetype,
+        video_analyses=video_analyses,
+        production_application=production_application,
     )
+
+
+def _build_video_analyses(raw_analyses: object, selected_videos: list[dict]) -> list[TopicVideoAnalysis]:
+    by_title = {}
+    if isinstance(raw_analyses, list):
+        for raw in raw_analyses:
+            if isinstance(raw, dict):
+                title = html.unescape(str(raw.get("title") or "")).strip()
+                if title:
+                    by_title[title] = raw
+
+    analyses: list[TopicVideoAnalysis] = []
+    raw_list = [raw for raw in raw_analyses if isinstance(raw, dict)] if isinstance(raw_analyses, list) else []
+    for idx, video in enumerate(selected_videos[:MAX_SELECTED_VIDEOS]):
+        raw = by_title.get(video["title"], raw_list[idx] if idx < len(raw_list) else {})
+        most_watched_scene = raw.get("most_watched_scene") or video.get("most_watched_scene") or "가장 많이 시청한 장면 데이터 없음"
+        most_watched_time = raw.get("most_watched_time") or video.get("most_watched_time") or "data_missing"
+        analyses.append(
+            TopicVideoAnalysis(
+                title=raw.get("title") or video["title"],
+                channel=raw.get("channel") or video.get("channel", ""),
+                content_summary=raw.get("content_summary") or _default_content_summary(video),
+                duration=raw.get("duration") or video.get("duration") or "분량 데이터 없음",
+                production_intent=raw.get("production_intent") or _default_production_intent(video),
+                most_watched_time=most_watched_time,
+                most_watched_scene=most_watched_scene,
+                hook_takeaway=raw.get("hook_takeaway") or _default_hook_takeaway(video),
+                views=video.get("views", 0),
+                url=video.get("url", ""),
+            )
+        )
+    return analyses
+
+
+def _build_production_application(raw: object, selected_videos: list[dict]) -> TopicProductionApplication:
+    if isinstance(raw, dict):
+        return TopicProductionApplication(
+            opening_strategy=raw.get("opening_strategy") or "",
+            structure_strategy=raw.get("structure_strategy") or "",
+            scene_strategy=raw.get("scene_strategy") or "",
+            topic_generation_basis=raw.get("topic_generation_basis") or "",
+        )
+    if not selected_videos:
+        return TopicProductionApplication()
+    top_video = max(selected_videos, key=lambda item: item.get("views", 0))
+    missing_scene = any("데이터 없음" in str(video.get("most_watched_scene", "")) for video in selected_videos)
+    return TopicProductionApplication(
+        opening_strategy=f"우리 영상은 첫 10초에 '{top_video['title']}'처럼 결론형 질문을 먼저 던지고, 첫 30초 안에 시청자 선택지를 제시합니다.",
+        structure_strategy="선택 영상들의 조회수·분량·훅 패턴을 비교해 정책/시장 이슈를 리치고식 데이터 판단표로 재구성합니다.",
+        scene_strategy=(
+            "가장 많이 시청한 장면 데이터가 없으므로 임의 장면은 만들지 않고, 제목·조회수·훅 구조를 도입부 설계 근거로만 사용합니다."
+            if missing_scene
+            else "가장 많이 시청한 시간대의 장면 구조를 도입부 문제 제기와 1분 내 데이터 제시 구간에 반영합니다."
+        ),
+        topic_generation_basis="각 선택 영상의 내용, 분량, 제작의도, 조회수, 훅/장면 단서를 주제 후보 점수와 도입 전략에 반영합니다.",
+    )
+
+
+def _default_content_summary(video: dict) -> str:
+    return f"'{video['title']}'의 제목·채널·조회수·훅 패턴을 기준으로 시청자가 궁금해하는 시장 판단 문제를 요약합니다."
+
+
+def _default_production_intent(video: dict) -> str:
+    hook = video.get("hook_type") or "unknown"
+    return f"{hook} 훅으로 시청자의 불안/궁금증을 즉시 자극하고, 조회수 {video.get('views', 0)} 흐름을 이용해 클릭을 확보하려는 의도입니다."
+
+
+def _default_hook_takeaway(video: dict) -> str:
+    scene = video.get("most_watched_scene") or "가장 많이 시청한 장면 데이터 없음"
+    return f"우리 도입부에는 제목의 긴장감, {video.get('duration', '분량 데이터 없음')} 분량감, 장면 단서({scene})를 데이터 판단 질문으로 변환합니다."
 
 
 def _clean_issue(issue: str) -> str:
@@ -164,6 +241,7 @@ def _normalize_video_source(raw: dict) -> dict:
     except (TypeError, ValueError):
         views = 0
     most_watched_scene = raw.get("most_watched_scene") or raw.get("retention_peak") or "가장 많이 시청한 장면 데이터 없음"
+    most_watched_time = raw.get("most_watched_time") or raw.get("retention_peak_time") or "data_missing"
     return {
         "title": title,
         "channel": html.unescape(str(raw.get("channel") or "")).strip(),
@@ -172,6 +250,7 @@ def _normalize_video_source(raw: dict) -> dict:
         "published_at": raw.get("published_at") or raw.get("published") or "",
         "duration": raw.get("duration") or raw.get("duration_text") or "분량 데이터 없음",
         "most_watched_scene": most_watched_scene,
+        "most_watched_time": most_watched_time,
         "hook_type": analysis.get("hook_type") or raw.get("hook_type") or "unknown",
         "creative_score": analysis.get("score"),
         "patterns": analysis.get("patterns") or [],

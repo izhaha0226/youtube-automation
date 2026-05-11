@@ -995,6 +995,53 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           </div>
         )}
         {topics && (
+          <div className="mt-4 space-y-4">
+            {(topics.video_analyses?.length ?? 0) > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-500">Video Analysis</div>
+                    <h3 className="mt-1 text-sm font-bold text-navy">영상별 분석 요약</h3>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-500">{topics.video_analyses?.length ?? 0}개 개별 분석</span>
+                </div>
+                <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                  {topics.video_analyses?.map((video, idx) => (
+                    <div key={`${video.title}-${idx}`} className="rounded-2xl border border-white bg-white p-3 text-xs text-slate-600 shadow-sm">
+                      <div className="text-[10px] font-semibold text-slate-400">선택 영상 {idx + 1}</div>
+                      <div className="mt-1 line-clamp-2 font-bold text-navy">{decodeHtmlEntities(video.title)}</div>
+                      <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
+                        {video.channel && <span className="rounded-full bg-slate-100 px-2 py-0.5">채널 {decodeHtmlEntities(video.channel)}</span>}
+                        {typeof video.views === "number" && video.views > 0 && <span className="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-700">조회수 {formatViews(video.views)}</span>}
+                        {video.duration && <span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">시간 {video.duration}</span>}
+                      </div>
+                      <div className="mt-3 space-y-2 leading-relaxed">
+                        <p><span className="font-semibold text-slate-500">내용</span> · {video.content_summary || "내용 분석 데이터 없음"}</p>
+                        <p><span className="font-semibold text-slate-500">제작의도</span> · {video.production_intent || "제작의도 데이터 없음"}</p>
+                        <p><span className="font-semibold text-slate-500">많이 본 시간대</span> · {video.most_watched_time || "data_missing"}</p>
+                        <p><span className="font-semibold text-slate-500">어떤 장면</span> · {video.most_watched_scene || "가장 많이 시청한 장면 데이터 없음"}</p>
+                        <p><span className="font-semibold text-slate-500">도입 힌트</span> · {video.hook_takeaway || "도입 힌트 데이터 없음"}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {topics.production_application && (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-xs text-slate-700">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-500">Application</div>
+                <h3 className="mt-1 text-sm font-bold text-navy">우리 영상 도입 적용안</h3>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-xl bg-white/80 p-3"><span className="font-semibold text-slate-500">오프닝</span><p className="mt-1 leading-relaxed">{topics.production_application.opening_strategy || "선택 영상 분석 후 첫 10초/30초 도입부로 변환합니다."}</p></div>
+                  <div className="rounded-xl bg-white/80 p-3"><span className="font-semibold text-slate-500">구조</span><p className="mt-1 leading-relaxed">{topics.production_application.structure_strategy || "조회수·분량·훅 구조를 리치고식 판단표로 바꿉니다."}</p></div>
+                  <div className="rounded-xl bg-white/80 p-3"><span className="font-semibold text-slate-500">장면/시간대</span><p className="mt-1 leading-relaxed">{topics.production_application.scene_strategy || "retention 데이터가 없으면 임의 장면을 만들지 않고 data_missing으로 표시합니다."}</p></div>
+                  <div className="rounded-xl bg-white/80 p-3"><span className="font-semibold text-slate-500">주제 생성 근거</span><p className="mt-1 leading-relaxed">{topics.production_application.topic_generation_basis || "선택 영상의 개별 분석을 주제 후보 점수와 제목 각도에 반영합니다."}</p></div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {topics && (
           <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
             {topics.recommended_topics.map((t, i) => {
               const score = totalScore(t.score);

@@ -60,7 +60,32 @@ type TopicCandidate = {
   next_loop?: string;
   hypothesis_payload?: Record<string, unknown>;
 };
-type TopicResult = { recommended_topics: TopicCandidate[]; selected_topic: string; selected_reason: string; selected_archetype?: TopicCandidate["archetype"] };
+type TopicVideoAnalysis = {
+  title: string;
+  channel?: string;
+  content_summary?: string;
+  duration?: string;
+  production_intent?: string;
+  most_watched_time?: string;
+  most_watched_scene?: string;
+  hook_takeaway?: string;
+  views?: number;
+  url?: string;
+};
+type TopicProductionApplication = {
+  opening_strategy?: string;
+  structure_strategy?: string;
+  scene_strategy?: string;
+  topic_generation_basis?: string;
+};
+type TopicResult = {
+  recommended_topics: TopicCandidate[];
+  selected_topic: string;
+  selected_reason: string;
+  selected_archetype?: TopicCandidate["archetype"];
+  video_analyses?: TopicVideoAnalysis[];
+  production_application?: TopicProductionApplication;
+};
 type ScenarioSection = { heading: string; script: string };
 type ScenarioOutput = {
   hook: string;
@@ -127,4 +152,4 @@ export function clearDashboard() {
   } catch {}
 }
 
-export type { TrendData, TrendItem, BenchmarkVideo, ChartData, TopicCandidate, TopicResult, ScenarioOutput, ResearchSession, ResearchArticle, ResearchVideo };
+export type { TrendData, TrendItem, BenchmarkVideo, ChartData, TopicCandidate, TopicResult, TopicVideoAnalysis, TopicProductionApplication, ScenarioOutput, ResearchSession, ResearchArticle, ResearchVideo };

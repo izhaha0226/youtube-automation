@@ -55,11 +55,33 @@ class TopicCandidate(BaseModel):
     hypothesis_payload: dict = Field(default_factory=dict)
 
 
+class TopicVideoAnalysis(BaseModel):
+    title: str = ""
+    channel: str = ""
+    content_summary: str = ""
+    duration: str = "분량 데이터 없음"
+    production_intent: str = ""
+    most_watched_time: str = "data_missing"
+    most_watched_scene: str = "가장 많이 시청한 장면 데이터 없음"
+    hook_takeaway: str = ""
+    views: int = 0
+    url: str = ""
+
+
+class TopicProductionApplication(BaseModel):
+    opening_strategy: str = ""
+    structure_strategy: str = ""
+    scene_strategy: str = ""
+    topic_generation_basis: str = ""
+
+
 class TopicResult(BaseModel):
     recommended_topics: list[TopicCandidate]
     selected_topic: str
     selected_reason: str
     selected_archetype: ContentArchetype = "판단형"
+    video_analyses: list[TopicVideoAnalysis] = Field(default_factory=list)
+    production_application: TopicProductionApplication = Field(default_factory=TopicProductionApplication)
     next_step: Literal["scenario"] = "scenario"
 
 

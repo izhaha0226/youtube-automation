@@ -118,8 +118,25 @@ def test_narration_enforces_10_minimum_when_llm_returns_short(monkeypatch, tmp_p
     assert len(result.sentences) > 20
 
 
-def test_topic_prompt_receives_selected_video_analysis(monkeypatch):
+def test_topic_result_contains_per_video_analysis_and_application(monkeypatch):
     fake = FakeLLM({
+        "video_analyses": [
+            {
+                "title": "서울 집값 영상",
+                "content_summary": "5.9 대책 이후 서울 집값 판단 기준을 설명합니다.",
+                "duration": "18:20",
+                "production_intent": "정책 직후 불안한 실수요자의 매수/대기 판단을 돕기 위해 제작된 영상입니다.",
+                "most_watched_time": "data_missing",
+                "most_watched_scene": "가장 많이 시청한 장면 데이터 없음",
+                "hook_takeaway": "정책 직후 결론을 먼저 던지고 근거를 뒤에 배치합니다.",
+            }
+        ],
+        "production_application": {
+            "opening_strategy": "우리 영상은 첫 10초에 '지금 사도 되는 사람/기다려야 하는 사람'을 먼저 나눠서 도입합니다.",
+            "structure_strategy": "선택 영상의 정책 해설 구조를 리치고 데이터 기준표로 바꿉니다.",
+            "scene_strategy": "retention 데이터가 없으므로 실제 장면은 지어내지 않고 제목·조회수·훅 구조만 차용합니다.",
+            "topic_generation_basis": "선택 영상의 조회수, 분량, 제작의도, 도입부 구조를 주제 후보에 반영합니다.",
+        },
         "recommended_topics": [{
             "title": "조회수 높은 영상 도입부를 변환한 부동산 판단 기준",
             "reason": "선택 영상의 조회수와 훅 구조를 근거로 도입부를 설계합니다.",
@@ -141,10 +158,10 @@ def test_topic_prompt_receives_selected_video_analysis(monkeypatch):
     })
     monkeypatch.setattr(selector, "llm", lambda temperature=0.5: fake)
 
-    selector.select_topic(TopicInput(
+    result = selector.select_topic(TopicInput(
         current_issues=["[VIDEO] &#39;서울 집값&#39;"],
         trend_keywords=["부동산"],
-        selected_videos=[{"title": "&#39;서울 집값&#39;", "channel": "A", "views": 24000, "creative_analysis": {"hook_type": "informational", "score": 8}}],
+        selected_videos=[{"title": "&#39;서울 집값&#39;", "channel": "A", "views": 24000, "duration": "18:20", "creative_analysis": {"hook_type": "informational", "score": 8}}],
     ))
 
     prompt = fake.calls[0]["user"]
@@ -152,6 +169,13 @@ def test_topic_prompt_receives_selected_video_analysis(monkeypatch):
     assert "video-analysis" in prompt
     assert "24000" in prompt
     assert "가장 많이 시청한 장면 데이터 없음" in prompt
+    assert "video_analyses" in prompt
+    assert "production_application" in prompt
+    assert len(result.video_analyses) == 1
+    assert result.video_analyses[0].title == "서울 집값 영상"
+    assert result.video_analyses[0].duration == "18:20"
+    assert "data_missing" in result.video_analyses[0].most_watched_time
+    assert "첫 10초" in result.production_application.opening_strategy
 
 
 def test_topic_rejects_video_issue_without_selected_video_data():

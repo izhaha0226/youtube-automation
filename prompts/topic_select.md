@@ -22,6 +22,9 @@
 - `most_watched_scene`이 data_missing이면 "가장 많이 시청한 장면 데이터 없음"을 risk 또는 failure_criteria에 명시한다. 절대 임의로 장면을 지어내지 않는다.
 - tactical_hypothesis에는 우리 영상 도입부에 가져올 구조를 반드시 쓴다: 첫 10초 훅, 첫 30초 문제 제기, 1분 내 데이터 제시 방식.
 - 단순 제목/이슈 요약이 아니라 "왜 그 영상이 조회를 얻었는지 → 우리 도입부에 어떻게 변환할지"를 써라.
+- 출력에는 `video_analyses`를 반드시 포함하고, 선택한 영상이 3개면 3개 각각을 개별 분석한다.
+- 각 `video_analyses` 항목에는 content_summary(내용), duration(시간/분량), production_intent(영상 제작 의도), most_watched_time(가장 많이 본 시간대), most_watched_scene(어떤 장면), hook_takeaway(우리 도입부에 가져올 점)를 쓴다.
+- 출력에는 `production_application`을 반드시 포함하고, 선택 영상 분석을 우리 영상의 첫 10초/30초/1분 구조와 주제 생성 근거로 어떻게 적용할지 쓴다.
 
 ## 김기원 대표 철학
 {{kim_kiwon_philosophy}}
@@ -94,6 +97,26 @@
 JSON만 출력:
 ```json
 {
+  "video_analyses": [
+    {
+      "title": "선택 영상 제목",
+      "channel": "채널명",
+      "content_summary": "내용 요약",
+      "duration": "영상 시간/분량",
+      "production_intent": "이 영상이 왜 이렇게 제작됐는지",
+      "most_watched_time": "가장 많이 본 시간대 또는 data_missing",
+      "most_watched_scene": "어떤 장면인지. 데이터 없으면 가장 많이 시청한 장면 데이터 없음",
+      "hook_takeaway": "우리 도입부에 가져올 점",
+      "views": 0,
+      "url": "영상 URL"
+    }
+  ],
+  "production_application": {
+    "opening_strategy": "우리 영상 첫 10초/30초에 어떻게 도입할지",
+    "structure_strategy": "본문 구조에 어떻게 변환할지",
+    "scene_strategy": "장면/시간대 데이터를 어떻게 쓰거나, 없으면 어떻게 제한할지",
+    "topic_generation_basis": "위 분석을 주제 후보 생성에 어떻게 반영했는지"
+  },
   "recommended_topics": [
     {
       "title": "촬영 가능한 제목형 주제",
