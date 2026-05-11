@@ -1134,6 +1134,17 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">5. AI 시나리오 워크스페이스</h2>
           <div className="flex items-center gap-2">
+            {scenario && (
+              <a
+                href="/prompter"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800"
+              >
+                <span aria-hidden>▶</span>
+                프롬프터 모드
+              </a>
+            )}
             {research?.session_id && scenario && (
               <a
                 href={`/workspace/${research.session_id}`}

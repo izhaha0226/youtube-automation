@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Link from "next/link";
+import ActiveNavLinks from "./components/active-nav-links";
 
 export const metadata: Metadata = {
   title: "리치고 자동화 대시보드",
@@ -20,31 +20,6 @@ const NAV_BOTTOM = [
   { href: "/support", label: "고객지원", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
 ];
 
-function NavIcon({ d }: { d: string }) {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d={d} />
-    </svg>
-  );
-}
-
-function NavLinks({ items }: { items: typeof NAV_MAIN | typeof NAV_BOTTOM }) {
-  return (
-    <>
-      {items.map((n) => (
-        <Link
-          key={n.label}
-          href={n.href}
-          className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-navy lg:flex-col lg:gap-1.5 lg:px-2 lg:py-3"
-        >
-          <NavIcon d={n.icon} />
-          <span className="leading-tight lg:text-[11px]">{n.label}</span>
-        </Link>
-      ))}
-    </>
-  );
-}
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
@@ -53,10 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <aside className="hidden w-[92px] flex-col border-r border-slate-200/80 bg-white/90 px-3 py-5 shadow-sm backdrop-blur lg:flex">
             <div className="mb-8 flex h-11 w-11 items-center justify-center rounded-2xl bg-navy text-sm font-bold text-white shadow-sm">R</div>
             <nav className="flex flex-1 flex-col gap-2">
-              <NavLinks items={NAV_MAIN} />
+              <ActiveNavLinks items={NAV_MAIN} />
             </nav>
             <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4">
-              <NavLinks items={NAV_BOTTOM} />
+              <ActiveNavLinks items={NAV_BOTTOM} />
             </div>
           </aside>
 
@@ -88,8 +63,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
               <div className="overflow-x-auto border-t border-slate-100 px-4 py-2 lg:hidden">
                 <nav className="flex w-max gap-2">
-                  <NavLinks items={NAV_MAIN} />
-                  <NavLinks items={NAV_BOTTOM} />
+                  <ActiveNavLinks items={NAV_MAIN} />
+                  <ActiveNavLinks items={NAV_BOTTOM} />
                 </nav>
               </div>
             </header>
