@@ -34,6 +34,22 @@ type TrendKeywordMap = {
   correlations: TrendCorrelation[];
   clusters: TrendCluster[];
 };
+type TrendRecommendedIssue = {
+  rank: number;
+  title: string;
+  keyword: string;
+  cluster: string;
+  score: number;
+  shooting_priority: "오늘 찍기" | "3일 안에 찍기" | "데이터 확인 후" | string;
+  content_angle: "경고형" | "판단형" | "기회형" | "구조해설형" | string;
+  why_now: string;
+  hook: string;
+  representative_articles: TrendItem[];
+  related_youtube: TrendItem[];
+  keywords: string[];
+  selection_titles: string[];
+  richgo_data_signals: string[];
+};
 type TrendData = {
   period: string;
   period_label: string;
@@ -43,6 +59,7 @@ type TrendData = {
   benchmarks: BenchmarkVideo[];
   charts: ChartData;
   source_sections: TrendSourceSection[];
+  recommended_issues?: TrendRecommendedIssue[];
   keyword_map: TrendKeywordMap;
 };
 
@@ -152,4 +169,4 @@ export function clearDashboard() {
   } catch {}
 }
 
-export type { TrendData, TrendItem, BenchmarkVideo, ChartData, TopicCandidate, TopicResult, TopicVideoAnalysis, TopicProductionApplication, ScenarioOutput, ResearchSession, ResearchArticle, ResearchVideo };
+export type { TrendData, TrendItem, BenchmarkVideo, ChartData, TrendRecommendedIssue, TopicCandidate, TopicResult, TopicVideoAnalysis, TopicProductionApplication, ScenarioOutput, ResearchSession, ResearchArticle, ResearchVideo };

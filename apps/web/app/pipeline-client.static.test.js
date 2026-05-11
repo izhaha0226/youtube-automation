@@ -63,6 +63,11 @@ assert(source.includes('textarea') && source.includes('value={scenario.hook_30s 
 assert(source.includes('saveDashboard') && source.includes('scenario: nextScenario'), '시나리오 수정 내용은 localStorage 대시보드에 즉시 저장되어야 합니다.');
 assert(source.includes('saved.scenario ? saved.scenario : data.scenario'), '저장된 편집본이 있으면 워크스페이스 원본 fetch가 덮어쓰면 안 됩니다.');
 assert(source.includes('수정 내용은 자동 저장됩니다'), '시나리오 편집 화면에는 자동 저장 안내가 필요합니다.');
+assert(source.includes('recommended_issues') && source.includes('recommendedIssues'), '트렌드 API 추천 이슈를 UI에서 읽어야 합니다.');
+assert(source.includes('AI 추천 핵심 이슈 Top3') && source.includes('오늘의 촬영 추천 이슈 3개'), '트렌드 상단에는 AI 편집장 추천 Top3 카드가 필요합니다.');
+assert(source.includes('selectRecommendedIssue') && source.includes('이 이슈 기사 전체 선택'), '추천 이슈 카드에서 핵심 기사 전체 선택 동작이 필요합니다.');
+assert(source.includes('setIntent(issue.hook || issue.title)') && source.includes('setMustTags(Array.from(new Set'), '추천 이슈 선택 시 후킹 의도와 키워드를 다음 단계에 반영해야 합니다.');
+assert(source.includes('관련 유튜브 조회수순'), '추천 카드에는 관련 유튜브 조회수순 액션/근거가 보여야 합니다.');
 
 const layoutSource = fs.readFileSync('app/layout.tsx', 'utf8');
 assert(layoutSource.includes('ActiveNavLinks'), '왼쪽/상단 메뉴는 현재 경로 active 표시 컴포넌트를 사용해야 합니다.');

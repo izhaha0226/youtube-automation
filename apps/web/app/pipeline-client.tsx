@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { saveDashboard, loadDashboard, clearDashboard } from "./store";
 import StatusModal from "./components/status-modal";
-import type { TrendData, TopicCandidate, TopicResult, ScenarioOutput, ResearchSession } from "./store";
+import type { TrendData, TrendRecommendedIssue, TopicCandidate, TopicResult, ScenarioOutput, ResearchSession } from "./store";
 
 const SECTION_LABELS: Record<number, string> = { 0: "Hook (오프닝)", 1: "문제 제기 (현상)", 2: "핵심 분석 (데이터 연결)", 3: "경제 연계 (거시 관점)", 4: "부동산 전망 & 대응" };
 const PIE_COLORS = ["#0E1E3A", "#10B981", "#3B82F6", "#E6B43C"];
@@ -228,6 +228,19 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   function toggleIssue(title: string) {
     setSelectedIssues((prev) => prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]);
   }
+
+  function selectRecommendedIssue(issue: TrendRecommendedIssue) {
+    const titles = issue.selection_titles?.length
+      ? issue.selection_titles
+      : issue.representative_articles.map((article) => article.title).filter(Boolean);
+    const uniqueTitles = Array.from(new Set(titles));
+    setSelectedIssues(uniqueTitles);
+    setIntent(issue.hook || issue.title);
+    setMustTags(Array.from(new Set([...(issue.keywords ?? []).slice(0, 5), issue.keyword].filter(Boolean))));
+    setSelectedTrendSource("all");
+    setError(null);
+  }
+
   function addMust(tag: string) {
     const t = tag.trim();
     if (t && !mustTags.includes(t)) setMustTags([...mustTags, t]);
@@ -501,6 +514,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       insight: `${row.source} 이슈를 ${row.target} 관점으로 묶어 제목·도입부를 만들면 시청자가 바로 판단할 수 있습니다.`,
     }));
   const trendClusters = trends?.keyword_map?.clusters ?? [];
+  const recommendedIssues = trends?.recommended_issues ?? [];
   const trendBenchmarks = Array.isArray(trends?.benchmarks) ? trends.benchmarks : [];
   const trendNews = Array.isArray(trends?.news) ? trends.news : [];
   const trendYoutube = Array.isArray(trends?.youtube) ? trends.youtube : [];
@@ -702,6 +716,54 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
         {trends && (
           <div className="mt-4 space-y-5">
+            {recommendedIssues.length > 0 && (
+              <div className="rounded-[24px] border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-blue-50 p-4 shadow-[0_18px_60px_-42px_rgba(15,23,42,0.35)] sm:p-5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">AI Editor Pick</div>
+                    <h3 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-slate-950">AI 추천 핵심 이슈 Top3</h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">기사 나열 전에 오늘 촬영할 만한 이슈를 먼저 골라줍니다. 카드 선택 시 핵심 기사와 키워드가 다음 단계에 반영됩니다.</p>
+                  </div>
+                  <div className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-navy shadow-sm">오늘의 촬영 추천 이슈 3개</div>
+                </div>
+                <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+                  {recommendedIssues.map((issue) => {
+                    const active = issue.selection_titles?.some((title) => selectedIssues.includes(title));
+                    return (
+                      <div key={`${issue.rank}-${issue.title}`} className={`rounded-2xl border p-4 transition ${active ? "border-navy bg-white shadow-[0_18px_50px_-38px_rgba(14,30,58,0.7)]" : "border-white/80 bg-white/75 hover:-translate-y-0.5 hover:border-amber-200"}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="rounded-full bg-navy px-2.5 py-1 text-[11px] font-bold text-white">#{issue.rank}</span>
+                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{issue.shooting_priority}</span>
+                        </div>
+                        <h4 className="mt-3 text-sm font-semibold leading-6 text-slate-950">{decodeHtmlEntities(issue.title)}</h4>
+                        <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">{issue.why_now}</p>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          <span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">점수 {issue.score}</span>
+                          <span className="rounded bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-700">{issue.content_angle}</span>
+                          {issue.keywords.slice(0, 3).map((keyword) => <span key={keyword} className="rounded bg-white px-2 py-1 text-[10px] text-slate-500 border border-slate-100">#{keyword}</span>)}
+                        </div>
+                        <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">예상 후킹</div>
+                          <div className="mt-1 text-xs font-semibold leading-5 text-slate-800">{issue.hook}</div>
+                        </div>
+                        <div className="mt-3 space-y-1.5 text-[11px] text-slate-500">
+                          <div className="font-semibold text-slate-700">핵심 근거 기사 {issue.representative_articles.length}건</div>
+                          {issue.representative_articles.slice(0, 2).map((article) => <div key={article.title} className="truncate">· {decodeHtmlEntities(article.title)}</div>)}
+                          {(issue.related_youtube?.length ?? 0) > 0 && <div className="pt-1 font-semibold text-navy">관련 유튜브 조회수순 {issue.related_youtube.length}개</div>}
+                        </div>
+                        <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-2 text-[11px] leading-5 text-emerald-800">
+                          {issue.richgo_data_signals?.[0] ?? "리치고 데이터로 실거래가·거래량 확인"}
+                        </div>
+                        <button type="button" onClick={() => selectRecommendedIssue(issue)} className={`mt-4 w-full rounded-xl px-3 py-2 text-xs font-semibold transition ${active ? "bg-navy text-white" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
+                          이 이슈 기사 전체 선택
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
               <div className="mb-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
                 <span>트렌드 분석 차트</span>

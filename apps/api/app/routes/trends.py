@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from itertools import combinations
@@ -285,6 +285,142 @@ def latest_basis(items: list[dict], key: str) -> str:
     return format_basis(latest)
 
 
+def compact_trend_item(item: dict) -> dict:
+    return {
+        "title": item.get("title", ""),
+        "source": item.get("source", ""),
+        "provider": item.get("provider") or infer_news_provider(item),
+        "query": item.get("query", ""),
+        "pub": item.get("pub"),
+        "published": item.get("published"),
+        "url": item.get("url") or item.get("link"),
+        "link": item.get("link") or item.get("url"),
+        "channel": item.get("channel"),
+        "views": int(item.get("views") or 0),
+    }
+
+
+def item_matches_keyword(item: dict, keyword: str) -> bool:
+    text = " ".join(str(item.get(key, "")) for key in ("title", "desc", "query", "source", "channel"))
+    if keyword in text:
+        return True
+    cluster = CLUSTER_BY_KEYWORD.get(keyword)
+    if not cluster:
+        return False
+    return any(cluster_keyword in text for cluster_keyword in KEYWORD_CLUSTERS.get(cluster, []))
+
+
+def issue_title_for_keyword(keyword: str, cluster: str) -> str:
+    templates = {
+        "금리·대출": f"{keyword}, 지금 대출·전세 시장에서 놓치면 늦는 신호",
+        "아파트·공급": f"{keyword}, 집값 방향이 갈리는 공급 신호 3가지",
+        "전세·월세": f"{keyword}, 세입자와 집주인이 지금 봐야 할 반전 조건",
+        "정책·세제": f"{keyword}, 정책 변화가 내 집값에 미칠 실제 영향",
+        "지역·교통": f"{keyword}, 지역 가격을 움직일 수 있는 핵심 변수",
+        "기타": f"{keyword}, 오늘 부동산·경제 영상으로 풀어야 할 핵심 이슈",
+    }
+    return templates.get(cluster, templates["기타"])
+
+
+def content_angle_for_cluster(cluster: str) -> str:
+    if cluster in {"금리·대출", "전세·월세"}:
+        return "경고형"
+    if cluster == "정책·세제":
+        return "판단형"
+    if cluster in {"아파트·공급", "지역·교통"}:
+        return "구조해설형"
+    return "기회형"
+
+
+def richgo_signals_for_cluster(cluster: str) -> list[str]:
+    signals = {
+        "금리·대출": ["리치고 데이터로 월 상환액 변화 확인", "전세가율·매매가 대비 대출 부담 비교", "지역별 거래량 둔화 여부 확인"],
+        "아파트·공급": ["리치고 데이터로 입주물량·미분양 확인", "청약 경쟁률과 실거래가 흐름 비교", "지역별 매물 증가 여부 확인"],
+        "전세·월세": ["리치고 데이터로 전세가율 확인", "전월세 전환 흐름과 거래량 비교", "보증금 리스크 지역 확인"],
+        "정책·세제": ["리치고 데이터로 정책 전후 가격 반응 확인", "실거래가·거래량·매물 변화 비교", "세금 부담 변화가 수요에 미치는 영향 확인"],
+        "지역·교통": ["리치고 데이터로 지역별 실거래가 추세 확인", "교통 호재 전후 거래량 비교", "인접 지역 가격 전이 확인"],
+    }
+    return signals.get(cluster, ["리치고 데이터로 실거래가·거래량·전세가율 확인", "뉴스 이슈와 실제 숫자 차이 검증", "지역별 반응 차이 확인"])
+
+
+def build_recommended_issues(*, naver_news: list[dict], google_news: list[dict], youtube_items: list[dict], keyword_map: dict) -> list[dict]:
+    all_news = naver_news + google_news
+    candidates: list[dict] = []
+    seen_keywords: set[str] = set()
+
+    for row in keyword_map.get("keywords", [])[:24]:
+        keyword = row["keyword"]
+        if keyword in seen_keywords:
+            continue
+        cluster = row.get("cluster") or CLUSTER_BY_KEYWORD.get(keyword, "기타")
+        related_articles = [item for item in all_news if item_matches_keyword(item, keyword)]
+        related_youtube = [item for item in youtube_items if item_matches_keyword(item, keyword)]
+        if not related_articles and not related_youtube:
+            continue
+
+        recent_bonus = 0
+        for item in related_articles[:6] + related_youtube[:4]:
+            dt = parse_any_datetime(item.get("pub") or item.get("published"))
+            if dt and (datetime.now(timezone.utc) - dt) <= timedelta(days=1):
+                recent_bonus += 6
+
+        youtube_views = sum(int(item.get("views") or 0) for item in related_youtube[:5])
+        youtube_score = min(25, youtube_views // 50000)
+        source_score = len(set(row.get("sources", []))) * 14
+        policy_bonus = 12 if cluster in {"금리·대출", "정책·세제", "전세·월세"} else 6
+        score = int(row.get("count", 0) * 8 + source_score + recent_bonus + youtube_score + policy_bonus)
+        priority = "오늘 찍기" if score >= 55 else "3일 안에 찍기" if score >= 35 else "데이터 확인 후"
+        sorted_youtube = sorted(related_youtube, key=lambda item: int(item.get("views") or 0), reverse=True)
+        sorted_articles = sorted(
+            related_articles,
+            key=lambda item: parse_any_datetime(item.get("pub")) or datetime.min.replace(tzinfo=timezone.utc),
+            reverse=True,
+        )
+
+        candidates.append(
+            {
+                "rank": 0,
+                "title": issue_title_for_keyword(keyword, cluster),
+                "keyword": keyword,
+                "cluster": cluster,
+                "score": score,
+                "shooting_priority": priority,
+                "content_angle": content_angle_for_cluster(cluster),
+                "why_now": f"왜 지금 찍어야 하는가: {keyword}가 {', '.join(row.get('sources', []) or ['뉴스'])}에서 동시에 잡혔고, 기사 {len(sorted_articles)}건·관련 영상 {len(sorted_youtube)}건으로 확인됩니다.",
+                "hook": f"지금 {keyword}만 보면 늦습니다. 실제로 갈리는 조건은 따로 있습니다.",
+                "representative_articles": [compact_trend_item(item) for item in sorted_articles[:4]],
+                "related_youtube": [compact_trend_item(item) for item in sorted_youtube[:3]],
+                "keywords": list(dict.fromkeys([keyword] + KEYWORD_CLUSTERS.get(cluster, [])[:5])),
+                "selection_titles": [item.get("title", "") for item in sorted_articles[:4]],
+                "richgo_data_signals": richgo_signals_for_cluster(cluster),
+            }
+        )
+        seen_keywords.add(keyword)
+
+    candidates.sort(key=lambda item: (item["score"], len(item["representative_articles"]), len(item["related_youtube"])), reverse=True)
+
+    diversified: list[dict] = []
+    used_clusters: set[str] = set()
+    for candidate in candidates:
+        cluster = candidate["cluster"]
+        if cluster in used_clusters and len(diversified) < 3:
+            continue
+        diversified.append(candidate)
+        used_clusters.add(cluster)
+        if len(diversified) == 3:
+            break
+    if len(diversified) < 3:
+        for candidate in candidates:
+            if candidate not in diversified:
+                diversified.append(candidate)
+            if len(diversified) == 3:
+                break
+
+    for index, candidate in enumerate(diversified[:3], start=1):
+        candidate["rank"] = index
+    return diversified[:3]
+
+
 def build_source_sections(*, naver_news: list[dict], google_news: list[dict], youtube_items: list[dict], keyword_map: dict, timeline_source: str) -> list[dict]:
     top_keyword_names = [row["keyword"] for row in keyword_map["keywords"]]
     return [
@@ -390,6 +526,12 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
         keyword_map=keyword_map,
         timeline_source=timeline_source,
     )
+    recommended_issues = build_recommended_issues(
+        naver_news=naver_news,
+        google_news=google_news,
+        youtube_items=yt_filtered,
+        keyword_map=keyword_map,
+    )
 
     period_label = {"today": "오늘", "3d": "최근 3일", "7d": "최근 7일", "30d": "최근 30일", "custom": f"{start}~{end}"}
 
@@ -403,6 +545,7 @@ def trends_scan(period: str = Query("7d", enum=["today", "3d", "7d", "30d", "cus
         "keywords": [row["keyword"] for row in keyword_map["keywords"][:30]],
         "benchmarks": benchmarks[:20],
         "source_sections": source_sections,
+        "recommended_issues": recommended_issues,
         "keyword_map": keyword_map,
         "charts": {
             "keyword_frequency": keyword_chart,
