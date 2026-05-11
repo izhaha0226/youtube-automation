@@ -57,6 +57,12 @@ assert(source.includes('영상별 분석 요약'), '4번에는 선택 영상별 
 assert(source.includes('우리 영상 도입 적용안'), '4번에는 분석 내용을 우리 영상 도입부에 어떻게 적용할지 보여야 합니다.');
 assert(source.includes('most_watched_scene') && source.includes('most_watched_time'), '영상별 분석에는 가장 많이 본 시간대와 장면 필드가 필요합니다.');
 assert(source.includes('/prompter') && source.includes('프롬프터 모드'), '시나리오 화면에는 프롬프터 모드 진입 버튼이 필요합니다.');
+assert(source.includes('scenarioEditMode') && source.includes('setScenarioEditMode'), '시나리오 완성 후 바로 편집 모드로 전환할 수 있어야 합니다.');
+assert(source.includes('updateScenarioField') && source.includes('updateScenarioSection'), '시나리오 필드와 본문 섹션을 직접 수정하는 함수가 필요합니다.');
+assert(source.includes('textarea') && source.includes('value={scenario.hook_30s ?? ""}') && source.includes('value={section.script}'), '시나리오 핵심 문구와 본문 섹션은 textarea로 바로 수정 가능해야 합니다.');
+assert(source.includes('saveDashboard') && source.includes('scenario: nextScenario'), '시나리오 수정 내용은 localStorage 대시보드에 즉시 저장되어야 합니다.');
+assert(source.includes('saved.scenario ? saved.scenario : data.scenario'), '저장된 편집본이 있으면 워크스페이스 원본 fetch가 덮어쓰면 안 됩니다.');
+assert(source.includes('수정 내용은 자동 저장됩니다'), '시나리오 편집 화면에는 자동 저장 안내가 필요합니다.');
 
 const layoutSource = fs.readFileSync('app/layout.tsx', 'utf8');
 assert(layoutSource.includes('ActiveNavLinks'), '왼쪽/상단 메뉴는 현재 경로 active 표시 컴포넌트를 사용해야 합니다.');

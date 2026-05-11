@@ -123,6 +123,8 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const [editingProductionKey, setEditingProductionKey] = useState<string | null>(null);
   const [productionDraft, setProductionDraft] = useState<ProductionDraft>({ title: "", meta: "", status: "" });
   const [deleteProductionKey, setDeleteProductionKey] = useState<string | null>(null);
+  const [scenarioEditMode, setScenarioEditMode] = useState(false);
+  const [scenarioSaveNotice, setScenarioSaveNotice] = useState("");
   const [hydratedDashboard, setHydratedDashboard] = useState(false);
 
   // 페이지 로드 시 세션 복원
@@ -168,7 +170,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               setSelectedTopicArchetype(data.scenario?.archetype ?? null);
               setSelectedArticleIds(data.selected_article_ids ?? []);
               setSelectedVideoIds(data.selected_video_ids ?? []);
-              setScenario(data.scenario ?? null);
+              setScenario(saved.scenario ? saved.scenario : data.scenario ?? null);
             }
           })
           .catch(() => {});
@@ -335,10 +337,39 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       if (!r.ok) throw new Error(`Scenario API: ${r.status}`);
       const data = await r.json();
       setScenario(data);
+      setScenarioEditMode(true);
+      setScenarioSaveNotice("시나리오 생성 완료 · 수정 내용은 자동 저장됩니다");
       saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario: data, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys });
       window.location.href = "/scenario";
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingScenario(false); }
+  }
+
+  function updateScenarioField<K extends keyof ScenarioOutput>(field: K, value: ScenarioOutput[K]) {
+    if (!scenario) return;
+    const nextScenario = { ...scenario, [field]: value } as ScenarioOutput;
+    setScenario(nextScenario);
+    setScenarioSaveNotice("수정 내용은 자동 저장됩니다");
+    saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario: nextScenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys });
+  }
+
+  function updateScenarioSection(index: number, value: string, field: "heading" | "script" = "script") {
+    if (!scenario) return;
+    let nextScenario: ScenarioOutput;
+    if (scenario.body_sections?.length) {
+      const nextSections = scenario.body_sections.map((section, i) => i === index ? { ...section, [field]: value } : section);
+      nextScenario = { ...scenario, body_sections: nextSections, body: nextSections.map((section) => section.script) };
+    } else {
+      const nextBody = scenario.body.map((text, i) => i === index ? value : text);
+      nextScenario = { ...scenario, body: nextBody };
+    }
+    setScenario(nextScenario);
+    setScenarioSaveNotice("수정 내용은 자동 저장됩니다");
+    saveDashboard({ trends, selectedIssues, intent, mustTags, topics, selectedTopic, selectedTopicArchetype, scenario: nextScenario, period, researchMode, researchUrl, researchCategory, research, selectedArticleIds, selectedVideoIds, productionEdits, hiddenProductionKeys });
+  }
+
+  function updateScenarioList(field: "action_takeaways" | "title_candidates" | "thumbnail_candidates", value: string) {
+    updateScenarioField(field, value.split("\n").map((item) => item.trim()).filter(Boolean) as ScenarioOutput[typeof field]);
   }
 
   function totalScore(s: TopicCandidate["score"]) {
@@ -1198,9 +1229,19 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
       {/* ═══ Row 3: 시나리오 독립 컨테이너 ═══ */}
       {view === "scenario" && (
       <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-semibold">5. AI 시나리오 워크스페이스</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {scenario && (
+              <button
+                type="button"
+                onClick={() => setScenarioEditMode((prev) => !prev)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm ${scenarioEditMode ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-amber-500 text-white hover:bg-amber-600"}`}
+              >
+                {scenarioEditMode ? "편집 완료" : "시나리오 편집"}
+              </button>
+            )}
+            {scenarioSaveNotice && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">{scenarioSaveNotice}</span>}
             {scenario && (
               <a
                 href="/prompter"
@@ -1232,22 +1273,54 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               <div className="text-[10px] font-semibold text-slate-400">선택 주제</div>
               <div className="mt-1 text-sm font-bold text-navy">{selectedTopic}</div>
             </div>
-            {scenario.opening_title && (
+            {scenarioEditMode && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-700">
+                수정 내용은 자동 저장됩니다. 수정 후 프롬프터 모드를 열면 편집된 대본이 그대로 반영됩니다.
+              </div>
+            )}
+            {(scenario.opening_title || scenarioEditMode) && (
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
                 <div className="text-xs font-semibold text-rose-500">제목 설명형 오프닝</div>
-                <p className="mt-1 text-sm font-bold leading-relaxed text-rose-700">{scenario.opening_title}</p>
+                {scenarioEditMode ? (
+                  <textarea
+                    value={scenario.opening_title ?? ""}
+                    onChange={(e) => updateScenarioField("opening_title", e.target.value)}
+                    className="mt-2 min-h-20 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-bold leading-relaxed text-rose-800 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+                    placeholder="제목 설명형 오프닝을 직접 수정"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm font-bold leading-relaxed text-rose-700">{scenario.opening_title}</p>
+                )}
               </div>
             )}
-            {scenario.hook_30s && (
+            {(scenario.hook_30s || scenarioEditMode) && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <div className="text-xs font-semibold text-amber-600">0~30초 Hook</div>
-                <p className="mt-1 text-sm leading-relaxed text-amber-900">{scenario.hook_30s}</p>
+                {scenarioEditMode ? (
+                  <textarea
+                    value={scenario.hook_30s ?? ""}
+                    onChange={(e) => updateScenarioField("hook_30s", e.target.value)}
+                    className="mt-2 min-h-24 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm leading-relaxed text-amber-950 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                    placeholder="0~30초 Hook을 직접 수정"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm leading-relaxed text-amber-900">{scenario.hook_30s}</p>
+                )}
               </div>
             )}
-            {scenario.bridge_3min && (
+            {(scenario.bridge_3min || scenarioEditMode) && (
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                 <div className="text-xs font-semibold text-blue-600">30초~3분 전개</div>
-                <p className="mt-1 text-sm leading-relaxed text-blue-900">{scenario.bridge_3min}</p>
+                {scenarioEditMode ? (
+                  <textarea
+                    value={scenario.bridge_3min ?? ""}
+                    onChange={(e) => updateScenarioField("bridge_3min", e.target.value)}
+                    className="mt-2 min-h-28 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm leading-relaxed text-blue-950 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    placeholder="30초~3분 전개를 직접 수정"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm leading-relaxed text-blue-900">{scenario.bridge_3min}</p>
+                )}
               </div>
             )}
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -1256,8 +1329,27 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                 <div className="mt-3 space-y-3">
                   {(scenario.body_sections?.length ? scenario.body_sections : scenario.body.map((text, i) => ({ heading: SECTION_LABELS[i + 1] ?? `섹션 ${i + 1}`, script: text }))).map((section, i) => (
                     <div key={i} className="border-l-2 border-slate-200 pl-3">
-                      <div className="text-xs font-bold text-slate-700">{section.heading}</div>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-600">{section.script}</p>
+                      {scenarioEditMode ? (
+                        <div className="space-y-2">
+                          <input
+                            value={section.heading}
+                            onChange={(e) => updateScenarioSection(i, e.target.value, "heading")}
+                            className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs font-bold text-slate-700 outline-none focus:border-navy focus:ring-2 focus:ring-slate-100"
+                            placeholder="섹션 제목"
+                          />
+                          <textarea
+                            value={section.script}
+                            onChange={(e) => updateScenarioSection(i, e.target.value)}
+                            className="min-h-36 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs leading-relaxed text-slate-700 outline-none focus:border-navy focus:ring-2 focus:ring-slate-100"
+                            placeholder="본문 대본을 직접 수정"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-xs font-bold text-slate-700">{section.heading}</div>
+                          <p className="mt-1 text-xs leading-relaxed text-slate-600">{section.script}</p>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1265,26 +1357,62 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               <div className="space-y-4">
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="text-xs font-semibold text-slate-500">액션 포인트</div>
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc pl-4">
-                    {(scenario.action_takeaways ?? []).map((item, i) => <li key={i}>{item}</li>)}
-                  </ul>
+                  {scenarioEditMode ? (
+                    <textarea
+                      value={(scenario.action_takeaways ?? []).join("\n")}
+                      onChange={(e) => updateScenarioList("action_takeaways", e.target.value)}
+                      className="mt-2 min-h-24 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs leading-relaxed text-slate-700 outline-none focus:border-navy focus:ring-2 focus:ring-slate-100"
+                      placeholder="한 줄에 하나씩 액션 포인트 입력"
+                    />
+                  ) : (
+                    <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc pl-4">
+                      {(scenario.action_takeaways ?? []).map((item, i) => <li key={i}>{item}</li>)}
+                    </ul>
+                  )}
                 </div>
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="text-xs font-semibold text-slate-500">제목 후보</div>
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc pl-4">
-                    {scenario.title_candidates.map((item, i) => <li key={i}>{item}</li>)}
-                  </ul>
+                  {scenarioEditMode ? (
+                    <textarea
+                      value={scenario.title_candidates.join("\n")}
+                      onChange={(e) => updateScenarioList("title_candidates", e.target.value)}
+                      className="mt-2 min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs leading-relaxed text-slate-700 outline-none focus:border-navy focus:ring-2 focus:ring-slate-100"
+                      placeholder="한 줄에 하나씩 제목 후보 입력"
+                    />
+                  ) : (
+                    <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc pl-4">
+                      {scenario.title_candidates.map((item, i) => <li key={i}>{item}</li>)}
+                    </ul>
+                  )}
                 </div>
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="text-xs font-semibold text-slate-500">썸네일 후보</div>
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc pl-4">
-                    {scenario.thumbnail_candidates.map((item, i) => <li key={i}>{item}</li>)}
-                  </ul>
+                  {scenarioEditMode ? (
+                    <textarea
+                      value={scenario.thumbnail_candidates.join("\n")}
+                      onChange={(e) => updateScenarioList("thumbnail_candidates", e.target.value)}
+                      className="mt-2 min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs leading-relaxed text-slate-700 outline-none focus:border-navy focus:ring-2 focus:ring-slate-100"
+                      placeholder="한 줄에 하나씩 썸네일 후보 입력"
+                    />
+                  ) : (
+                    <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc pl-4">
+                      {scenario.thumbnail_candidates.map((item, i) => <li key={i}>{item}</li>)}
+                    </ul>
+                  )}
                 </div>
-                {scenario.cta && (
+                {(scenario.cta || scenarioEditMode) && (
                   <div className="rounded-xl border border-slate-200 p-4">
                     <div className="text-xs font-semibold text-slate-500">CTA</div>
-                    <p className="mt-1 text-xs text-slate-600">{scenario.cta}</p>
+                    {scenarioEditMode ? (
+                      <textarea
+                        value={scenario.cta}
+                        onChange={(e) => updateScenarioField("cta", e.target.value)}
+                        className="mt-2 min-h-20 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs leading-relaxed text-slate-700 outline-none focus:border-navy focus:ring-2 focus:ring-slate-100"
+                        placeholder="CTA를 직접 수정"
+                      />
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-600">{scenario.cta}</p>
+                    )}
                   </div>
                 )}
               </div>
