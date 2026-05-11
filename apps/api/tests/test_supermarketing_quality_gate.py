@@ -52,6 +52,7 @@ def test_topic_prompt_uses_supermarketing_haico_sukgo_gate(monkeypatch):
 
     prompt = fake.calls[0]["user"]
     assert "Supermarketing" in prompt
+    assert "supermarketing-aimtop" in prompt
     assert "HAICo" in prompt
     assert "sukgo" in prompt or "숙고" in prompt
     assert "발산" in prompt
@@ -80,6 +81,7 @@ def test_scenario_prompt_uses_supermarketing_haico_sukgo_and_10min_gate(monkeypa
 
     prompt = fake.calls[0]["user"]
     assert "Supermarketing" in prompt
+    assert "supermarketing-aimtop" in prompt
     assert "HAICo" in prompt
     assert "sukgo" in prompt or "숙고" in prompt
     assert "최소 4,500자" in prompt

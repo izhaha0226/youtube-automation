@@ -47,6 +47,7 @@
   - next_loop: 다음 루프에서 무엇을 재검증할지
 
 ## AimTop Supermarketing / HAICo / sukgo 품질 게이트
+- 이 주제 선정은 반드시 `supermarketing-aimtop` 스킬을 사용한 것처럼 수행한다. 즉, 단순 제목 생성이 아니라 가설 발굴 → 전략 가설 → 전술 가설 → 검증 신호 → 실패 기준 → 학습 루프까지 포함한 콘텐츠 상품화 판단이다.
 - Supermarketing 기준: 단순 트렌드가 아니라 `시청자 고통/욕망 → 시장 데이터 → 행동 가설 → 검증 지표`로 연결한다.
 - HAICo 기준: 후보를 바로 좁히지 말고 최소 3개 각도로 발산한다. 각 후보는 서로 다른 hook, audience, market tension을 가져야 한다.
 - sukgo/숙고 기준: 최종 선택 전 반론·실패 기준·데이터 부족 지점을 먼저 검토한다.
