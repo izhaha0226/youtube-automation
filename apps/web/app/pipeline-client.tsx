@@ -440,11 +440,17 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     return item.href;
   }
 
+  function getProductionResumeHint(item: ProductionDraft & { key: string; href: string }) {
+    if (item.key === "new-video") return "클릭하면 현재 진행 단계로 이어가기";
+    if (item.key === "trend-issue") return "클릭하면 트렌드 진행 현황으로 이동";
+    if (item.key === "richgo-topic") return "클릭하면 주제 후보 진행 현황으로 이동";
+    return "클릭하면 해당 콘텐츠 진행 현황으로 이동";
+  }
+
   function resumeProduction(item: ProductionDraft & { key: string; href: string }) {
     setSelectedProductionKey(item.key);
     setDeleteProductionKey(null);
     setEditingProductionKey(null);
-    window.location.href = getProductionResumeHref(item);
   }
 
   const selectedSourceCount = selectedArticleIds.length + selectedVideoIds.length + selectedIssues.length;
@@ -610,14 +616,14 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           <div className="mt-4 space-y-3">
             {productions.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">삭제된 항목만 있습니다. 복구를 누르면 기본 제작 리스트가 다시 표시됩니다.</div>}
             {productions.map((item) => (
-              <button key={item.key} type="button" onClick={() => resumeProduction(item)} className={`group w-full rounded-[22px] border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-navy text-white shadow-[0_18px_55px_-35px_rgba(14,30,58,0.8)]" : "border-slate-200 bg-slate-50 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"}`}>
+              <a key={item.key} href={getProductionResumeHref(item)} onClick={() => resumeProduction(item)} className={`group block w-full rounded-[22px] border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-navy text-white shadow-[0_18px_55px_-35px_rgba(14,30,58,0.8)]" : "border-slate-200 bg-slate-50 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"}`}>
                 <div>
                   <div className={`text-sm font-semibold ${selectedProduction?.key === item.key ? "text-white" : "text-slate-900"}`}>{decodeHtmlEntities(item.title)}</div>
                   <div className={`mt-1 text-xs ${selectedProduction?.key === item.key ? "text-white/65" : "text-slate-500"}`}>{item.meta}</div>
-                  <div className={`mt-2 text-[11px] font-semibold ${selectedProduction?.key === item.key ? "text-[#e6b43c]" : "text-blue-600"}`}>클릭하면 현재 시나리오로 이어가기</div>
+                  <div className={`mt-2 text-[11px] font-semibold ${selectedProduction?.key === item.key ? "text-[#e6b43c]" : "text-blue-600"}`}>{getProductionResumeHint(item)}</div>
                 </div>
                 <div className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold sm:mt-0 ${selectedProduction?.key === item.key ? "bg-white/12 text-white" : "bg-white text-navy"}`}>{item.status}</div>
-              </button>
+              </a>
             ))}
           </div>
         </section>

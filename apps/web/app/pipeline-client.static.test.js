@@ -40,7 +40,9 @@ const runResearchBlock = source.slice(source.indexOf('async function runResearch
 assert(runResearchBlock.includes('setTopics(null);') && runResearchBlock.indexOf('setTopics(null);') < runResearchBlock.indexOf('const payload = selectedIssues.length > 0'), '관련 유튜브 재검색 시 기존 주제/시나리오 결과를 먼저 리셋해야 합니다.');
 assert(!source.includes('if (scenario && research?.session_id) return `/workspace/${research.session_id}`;'), '우측 버튼이 별도 워크스페이스 시나리오로 이동하면 시나리오가 2개처럼 보입니다.');
 assert(source.includes('hydratedDashboard') && source.includes('if (!hydratedDashboard) return;'), '저장된 대시보드가 복원되기 전 빈 상태로 덮어쓰면 안 됩니다.');
-assert(source.includes('클릭하면 현재 시나리오로 이어가기'), '제작 리스트에는 현재 시나리오로 이어진다는 안내가 필요합니다.');
+assert(source.includes('getProductionResumeHint'), '제작 리스트 항목별 진행 현황 안내 문구가 필요합니다.');
+assert(source.includes('href={getProductionResumeHref(item)}'), '제작 리스트는 모바일에서도 확실히 이동되도록 실제 링크 href를 가져야 합니다.');
+assert(source.includes('클릭하면 트렌드 진행 현황으로 이동') && source.includes('클릭하면 주제 후보 진행 현황으로 이동'), '트렌드/주제 항목은 현재 시나리오가 아니라 각 진행 현황으로 안내해야 합니다.');
 assert(source.includes('삭제 확인'), '삭제는 확인 단계를 거쳐야 합니다.');
 assert(source.includes('복구'), '삭제된 제작 항목을 복구할 수 있어야 합니다.');
 assert(source.includes('TrendSourceFilter = "all" | "naver" | "google" | "youtube"'), '트렌드 소스 필터는 전체/네이버/구글/유튜브만 허용해야 합니다.');
