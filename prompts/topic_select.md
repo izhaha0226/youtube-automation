@@ -19,6 +19,7 @@
 ## 선택 영상 분석 필수 규칙
 - source_mode가 `video-analysis`이면 선택 영상 분석 원본만 근거로 주제를 만든다. 선택 영상이 없거나 `[]`이면 주제를 만들지 말고 data_missing으로 판단해야 한다.
 - 선택 영상별로 다음을 반드시 비교한다: 분량(duration), 조회수(views), 채널명, 업로드 시점, hook_type, creative_score, patterns, most_watched_scene.
+- 선택 영상 항목의 `analysis_cache`가 `hit`이고 `cached_analysis`가 있으면 기존 DB 분석을 그대로 근거로 사용하고, 같은 영상을 처음부터 다시 분석하지 않는다. 이 경우 `video_analyses`에는 cached_analysis의 내용/의도/도입부 교훈을 유지하되, 주제 후보만 새 이슈·키워드에 맞게 재조합한다.
 - `most_watched_scene`이 data_missing이면 "가장 많이 시청한 장면 데이터 없음"을 risk 또는 failure_criteria에 명시한다. 절대 임의로 장면을 지어내지 않는다.
 - tactical_hypothesis에는 우리 영상 도입부에 가져올 구조를 반드시 쓴다: 첫 10초 훅, 첫 30초 문제 제기, 1분 내 데이터 제시 방식.
 - 단순 제목/이슈 요약이 아니라 "왜 그 영상이 조회를 얻었는지 → 우리 도입부에 어떻게 변환할지"를 써라.

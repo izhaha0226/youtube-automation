@@ -126,6 +126,18 @@ class VideoReferenceRecord(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class VideoAnalysisCache(SQLModel, table=True):
+    cache_key: str = Field(primary_key=True)
+    youtube_video_id: str | None = Field(default=None, index=True)
+    url: str = Field(default="", index=True)
+    title: str = Field(default="", index=True)
+    channel: str = ""
+    analysis: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    source_snapshot: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class ScenarioWorkspace(SQLModel, table=True):
     id: str = Field(primary_key=True)
     session_id: str = Field(index=True)

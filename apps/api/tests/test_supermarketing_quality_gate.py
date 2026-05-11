@@ -2,6 +2,7 @@ from app.modules.narration import narrator
 from app.modules.scenario import generator
 from app.modules.topic import selector
 from app.schemas import NarrationInput, ScenarioInput, ScenarioOutput, TopicInput
+from sqlmodel import SQLModel, create_engine
 
 
 class FakeLLM:
@@ -201,3 +202,107 @@ def test_topic_rejects_more_than_three_selected_videos():
         assert "최대 3개" in str(exc)
     else:
         raise AssertionError("선택 영상 4개 이상은 차단해야 합니다.")
+
+
+
+def test_topic_video_analysis_is_saved_and_reused_from_db(monkeypatch, tmp_path):
+    db_engine = create_engine(f"sqlite:///{tmp_path / 'cache.db'}", connect_args={"check_same_thread": False})
+    monkeypatch.setattr(selector, "engine", db_engine)
+    SQLModel.metadata.create_all(db_engine)
+
+    first_fake = FakeLLM({
+        "video_analyses": [{
+            "title": "전세 반등 신호",
+            "channel": "리치고",
+            "content_summary": "전세 반등이 매매 판단에 주는 영향을 분석합니다.",
+            "duration": "12:00",
+            "production_intent": "실수요자의 불안과 판단 욕구를 자극하기 위한 영상입니다.",
+            "most_watched_time": "data_missing",
+            "most_watched_scene": "가장 많이 시청한 장면 데이터 없음",
+            "hook_takeaway": "첫 10초에 내 집 판단 질문을 먼저 던집니다.",
+            "views": 31000,
+            "url": "https://youtu.be/cache-hit",
+        }],
+        "production_application": {},
+        "recommended_topics": [{
+            "title": "전세가 움직일 때 집값보다 먼저 갈리는 조건",
+            "reason": "전세 반등과 매매 판단을 바로 연결합니다.",
+            "score": {"popularity": 5, "economy": 4, "realestate": 5, "virality": 4, "richgo_fit": 5, "discussion": 4},
+            "risk": "장면 데이터 부족",
+            "archetype": "판단형",
+            "keywords": ["전세", "집값"],
+            "discovery_hypothesis": "전세 반등 불안",
+            "strategy_hypothesis": "리치고 데이터 판단",
+            "tactical_hypothesis": "첫 10초 질문",
+            "verification_signals": ["CTR"],
+            "failure_criteria": ["유지율 저조"],
+            "decision_label": "scale",
+            "next_loop": "댓글 질문 확인",
+        }],
+        "selected_topic": "전세가 움직일 때 집값보다 먼저 갈리는 조건",
+        "selected_reason": "캐시 저장용",
+        "selected_archetype": "판단형",
+    })
+    second_fake = FakeLLM({
+        "video_analyses": [],
+        "production_application": {},
+        "recommended_topics": [{
+            "title": "전세 반등을 못 보면 매수 타이밍도 틀립니다",
+            "reason": "캐시된 분석으로 주제만 다시 뽑습니다.",
+            "score": {"popularity": 5, "economy": 4, "realestate": 5, "virality": 4, "richgo_fit": 5, "discussion": 4},
+            "risk": "캐시 근거 확인 필요",
+            "archetype": "판단형",
+            "keywords": ["전세", "집값"],
+            "discovery_hypothesis": "전세 반등 불안",
+            "strategy_hypothesis": "리치고 데이터 판단",
+            "tactical_hypothesis": "첫 10초 질문",
+            "verification_signals": ["CTR"],
+            "failure_criteria": ["유지율 저조"],
+            "decision_label": "scale",
+            "next_loop": "댓글 질문 확인",
+        }],
+        "selected_topic": "전세 반등을 못 보면 매수 타이밍도 틀립니다",
+        "selected_reason": "캐시 재사용",
+        "selected_archetype": "판단형",
+    })
+    fakes = iter([first_fake, second_fake])
+    monkeypatch.setattr(selector, "llm", lambda temperature=0.5: next(fakes))
+    video = {"youtube_video_id": "yt-cache-1", "title": "전세 반등 신호", "channel": "리치고", "url": "https://youtu.be/cache-hit", "views": 31000}
+
+    selector.select_topic(TopicInput(current_issues=["[VIDEO] 전세 반등 신호"], trend_keywords=["전세", "집값"], selected_videos=[video]))
+    reused = selector.select_topic(TopicInput(current_issues=["[VIDEO] 전세 반등 신호"], trend_keywords=["전세", "집값"], selected_videos=[video]))
+
+    second_prompt = second_fake.calls[0]["user"]
+    assert '\"analysis_cache\": \"hit\"' in second_prompt
+    assert "전세 반등이 매매 판단에 주는 영향을 분석합니다." in second_prompt
+    assert reused.video_analyses[0].content_summary == "전세 반등이 매매 판단에 주는 영향을 분석합니다."
+
+
+def test_topic_titles_remove_bad_news_phrase_and_use_curiosity_hooks(monkeypatch):
+    fake = FakeLLM({
+        "recommended_topics": [{
+            "title": "뉴스 제목은 이게 아닙니다, 전세가 반등에서 내 집값을 가르는 숫자 3가지",
+            "reason": "후킹 재작성 확인",
+            "score": {"popularity": 5, "economy": 4, "realestate": 5, "virality": 4, "richgo_fit": 5, "discussion": 4},
+            "risk": "과장 주의",
+            "archetype": "판단형",
+            "keywords": ["전세", "집값"],
+            "discovery_hypothesis": "전세 반등 불안",
+            "strategy_hypothesis": "리치고 판단",
+            "tactical_hypothesis": "궁금증 훅",
+            "verification_signals": ["CTR"],
+            "failure_criteria": ["초반 이탈"],
+            "decision_label": "scale",
+            "next_loop": "후킹 반응 확인",
+        }],
+        "selected_topic": "뉴스 제목은 이게 아닙니다, 전세가 반등에서 내 집값을 가르는 숫자 3가지",
+        "selected_reason": "후킹 재작성 확인",
+        "selected_archetype": "판단형",
+    })
+    monkeypatch.setattr(selector, "llm", lambda temperature=0.5: fake)
+
+    result = selector.select_topic(TopicInput(current_issues=["전세가 반등"], trend_keywords=["전세", "집값"]))
+
+    assert "뉴스 제목은 이게 아닙니다" not in result.selected_topic
+    assert "뉴스 제목은 이게 아닙니다" not in result.recommended_topics[0].title
+    assert any(token in result.selected_topic for token in ["모르는", "놓치면", "갈리는", "반전"])

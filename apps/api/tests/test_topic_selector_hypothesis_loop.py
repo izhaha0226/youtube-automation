@@ -101,5 +101,6 @@ def test_select_topic_rewrites_news_copy_title_into_hook_topic(monkeypatch):
 
     assert result.selected_topic != source_title
     assert result.recommended_topics[0].title == result.selected_topic
-    assert "뉴스 제목은 이게 아닙니다" in result.selected_topic
+    assert "뉴스 제목은 이게 아닙니다" not in result.selected_topic
+    assert any(token in result.selected_topic for token in ["모르는", "놓치면", "갈리는", "반전"])
     assert "내 집값" in result.selected_topic

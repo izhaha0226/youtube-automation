@@ -1,24 +1,33 @@
 from __future__ import annotations
 
 import difflib
+import hashlib
 import html
 import json
 import re
+from datetime import datetime
+
+from sqlalchemy.exc import SQLAlchemyError
+from sqlmodel import Session
 
 from app.core.config import settings
+from app.core.db import engine
 from app.core.llm import LLMError, llm
 from app.core.logging import get_logger
 from app.core.prompts import load_prompt, render
+from app.models import VideoAnalysisCache
 from app.modules.richgo.editorial import content_archetype_context, editorial_rules_context, philosophy_context
 from app.modules.trend.scanner import scan  # used as fallback when no pre-fetched data
 from app.schemas import TopicCandidate, TopicInput, TopicProductionApplication, TopicResult, TopicScore, TopicVideoAnalysis
 
 log = get_logger(__name__)
 MAX_SELECTED_VIDEOS = 3
+BAD_TITLE_PHRASES = ("뉴스 제목은 이게 아닙니다", "뉴스 제목은")
 
 
 def select_topic(payload: TopicInput) -> TopicResult:
     selected_videos = [_normalize_video_source(v) for v in payload.selected_videos if _normalize_video_source(v)]
+    selected_videos = _attach_cached_video_analyses(selected_videos)
     if len(selected_videos) > MAX_SELECTED_VIDEOS:
         raise ValueError(f"영상 분석은 최대 {MAX_SELECTED_VIDEOS}개까지만 가능합니다.")
     if payload.current_issues and any(str(issue).startswith("[VIDEO]") for issue in payload.current_issues) and not selected_videos:
@@ -44,7 +53,7 @@ def select_topic(payload: TopicInput) -> TopicResult:
         must_include=", ".join(payload.must_include) or "(없음)",
         current_issues=json.dumps(current_issues, ensure_ascii=False),
         trend_keywords=", ".join(trend_keywords[:30]) or "(없음)",
-        selected_video_analysis=json.dumps(selected_videos, ensure_ascii=False) if selected_videos else "[]",
+        selected_video_analysis=json.dumps(_selected_video_prompt_payload(selected_videos), ensure_ascii=False) if selected_videos else "[]",
         source_mode=("video-analysis" if selected_videos else "research-backed" if payload.current_issues or payload.trend_keywords else "trend-scan"),
         target_speed="오늘 바로 촬영 가능한 주제를 우선",
         kim_kiwon_philosophy=philosophy_context(),
@@ -72,7 +81,7 @@ def select_topic(payload: TopicInput) -> TopicResult:
         if decision_label not in {"scale", "iterate", "stop", "data_missing"}:
             decision_label = "scale" if score.total() >= 24 else "iterate" if score.total() >= threshold_recommend else "stop"
         raw_title = c.get("title", "")
-        title = _rewrite_if_source_copy(raw_title, source_titles, trend_keywords, idx)
+        title = _sanitize_topic_hook(_rewrite_if_source_copy(raw_title, source_titles, trend_keywords, idx), source_titles, trend_keywords, idx)
         raw_to_title[raw_title] = title
         candidates.append(
             TopicCandidate(
@@ -97,6 +106,7 @@ def select_topic(payload: TopicInput) -> TopicResult:
 
     selected = data.get("selected_topic") or (candidates[0].title if candidates else "")
     selected = raw_to_title.get(selected, selected)
+    selected = _sanitize_topic_hook(selected, source_titles, trend_keywords, 0) if selected else selected
     selected_candidate = next((candidate for candidate in candidates if candidate.title == selected), None)
     selected_was_filtered = selected_candidate is None and bool(candidates)
     if selected_was_filtered:
@@ -115,6 +125,7 @@ def select_topic(payload: TopicInput) -> TopicResult:
         video_analyses=_build_video_analyses(data.get("video_analyses"), selected_videos),
         production_application=_build_production_application(data.get("production_application"), selected_videos),
     )
+    _save_video_analysis_cache(selected_videos, result.video_analyses)
     log.info("topic.select.done", count=len(candidates), selected=selected)
     return result
 
@@ -129,9 +140,9 @@ def _fallback_topic_result(payload: TopicInput, current_issues: list[str], trend
     focus = " · ".join(keywords[:3])
     anchor = _topic_anchor(primary_issue, keywords)
     templates = [
-        ("판단형", f"뉴스 제목은 이게 아닙니다, {anchor}에서 내 집값을 가르는 숫자 3가지"),
-        ("구조해설형", f"다들 {keywords[0]}만 보지만 진짜 신호는 따로 있습니다"),
-        ("기회형", f"불안한 사람은 놓치고 준비한 사람은 보는 {focus}의 반전 조건"),
+        ("판단형", f"{anchor}, 대부분 아직 모르는 내 집값 신호 3가지"),
+        ("구조해설형", f"다들 {keywords[0]}만 보지만 실제로 갈리는 건 이 조건입니다"),
+        ("기회형", f"불안한 사람이 놓치면 늦는 {focus}의 반전 조건"),
     ]
     candidates: list[TopicCandidate] = []
     for idx, (archetype, title) in enumerate(templates):
@@ -212,11 +223,134 @@ def _rewrite_if_source_copy(title: str, source_titles: list[str], keywords: list
     anchor = _topic_anchor(source_titles[0] if source_titles else title, keywords)
     key = keywords[index % len(keywords)] if keywords else "부동산"
     templates = [
-        f"뉴스 제목은 이게 아닙니다, {anchor}에서 내 집값을 가르는 숫자 3가지",
-        f"다들 {key}만 보고 있습니다, 진짜 돈의 방향은 이 신호에서 갈립니다",
-        f"지금 불안한 사람이 놓치는 것, {anchor} 뒤에 숨은 반전 조건",
+        f"{anchor}, 대부분 아직 모르는 내 집값 신호 3가지",
+        f"다들 {key}만 보는데 실제로 갈리는 건 이 조건입니다",
+        f"지금 불안한 사람이 놓치면 늦는 {anchor}의 반전 조건",
     ]
     return templates[index % len(templates)]
+
+
+def _sanitize_topic_hook(title: str, source_titles: list[str], keywords: list[str], index: int) -> str:
+    title = str(title or "").strip()
+    if any(phrase in title for phrase in BAD_TITLE_PHRASES):
+        return _curiosity_hook(source_titles, keywords, index)
+    return title
+
+
+def _curiosity_hook(source_titles: list[str], keywords: list[str], index: int) -> str:
+    anchor = _topic_anchor(source_titles[0] if source_titles else "", keywords)
+    key = keywords[index % len(keywords)] if keywords else "부동산"
+    templates = [
+        f"{anchor}, 대부분 아직 모르는 내 집값 신호 3가지",
+        f"다들 {key}만 보는데 실제로 갈리는 건 이 조건입니다",
+        f"지금 불안한 사람이 놓치면 늦는 {anchor}의 반전 조건",
+    ]
+    return templates[index % len(templates)]
+
+
+def _video_cache_key(video: dict) -> str:
+    identity = video.get("youtube_video_id") or video.get("url") or f"{video.get('channel', '')}:{video.get('title', '')}"
+    normalized = _normalize_title_for_similarity(identity)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _attach_cached_video_analyses(selected_videos: list[dict]) -> list[dict]:
+    enriched: list[dict] = []
+    for video in selected_videos:
+        item = dict(video)
+        cache_key = _video_cache_key(item)
+        item["analysis_cache"] = "miss"
+        item["cache_key"] = cache_key
+        try:
+            with Session(engine) as session:
+                cached = session.get(VideoAnalysisCache, cache_key)
+        except SQLAlchemyError as exc:
+            log.warning("topic.video_analysis_cache.load_failed", error=str(exc))
+            cached = None
+        if cached and cached.analysis:
+            item["analysis_cache"] = "hit"
+            item["cached_analysis"] = cached.analysis
+        enriched.append(item)
+    return enriched
+
+
+def _selected_video_prompt_payload(selected_videos: list[dict]) -> list[dict]:
+    payload: list[dict] = []
+    for video in selected_videos:
+        base = {
+            "youtube_video_id": video.get("youtube_video_id"),
+            "title": video.get("title"),
+            "channel": video.get("channel"),
+            "url": video.get("url"),
+            "views": video.get("views"),
+            "published_at": video.get("published_at"),
+            "duration": video.get("duration"),
+            "analysis_cache": video.get("analysis_cache", "miss"),
+        }
+        if video.get("cached_analysis"):
+            base["cached_analysis"] = video["cached_analysis"]
+        else:
+            base.update(
+                {
+                    "most_watched_scene": video.get("most_watched_scene"),
+                    "most_watched_time": video.get("most_watched_time"),
+                    "hook_type": video.get("hook_type"),
+                    "creative_score": video.get("creative_score"),
+                    "patterns": video.get("patterns"),
+                }
+            )
+        payload.append(base)
+    return payload
+
+
+def _analysis_to_cache_payload(analysis: TopicVideoAnalysis) -> dict:
+    return {
+        "title": analysis.title,
+        "channel": analysis.channel,
+        "content_summary": analysis.content_summary,
+        "duration": analysis.duration,
+        "production_intent": analysis.production_intent,
+        "most_watched_time": analysis.most_watched_time,
+        "most_watched_scene": analysis.most_watched_scene,
+        "hook_takeaway": analysis.hook_takeaway,
+        "views": analysis.views,
+        "url": analysis.url,
+    }
+
+
+def _save_video_analysis_cache(selected_videos: list[dict], analyses: list[TopicVideoAnalysis]) -> None:
+    if not selected_videos or not analyses:
+        return
+    now = datetime.utcnow()
+    try:
+        with Session(engine) as session:
+            for idx, video in enumerate(selected_videos[:MAX_SELECTED_VIDEOS]):
+                analysis = analyses[idx] if idx < len(analyses) else None
+                if not analysis:
+                    continue
+                cache_key = video.get("cache_key") or _video_cache_key(video)
+                row = session.get(VideoAnalysisCache, cache_key)
+                payload = _analysis_to_cache_payload(analysis)
+                if row:
+                    row.analysis = payload
+                    row.source_snapshot = _selected_video_prompt_payload([video])[0]
+                    row.updated_at = now
+                else:
+                    row = VideoAnalysisCache(
+                        cache_key=cache_key,
+                        youtube_video_id=video.get("youtube_video_id"),
+                        url=video.get("url", ""),
+                        title=video.get("title", ""),
+                        channel=video.get("channel", ""),
+                        analysis=payload,
+                        source_snapshot=_selected_video_prompt_payload([video])[0],
+                        created_at=now,
+                        updated_at=now,
+                    )
+                    session.add(row)
+            session.commit()
+    except SQLAlchemyError as exc:
+        log.warning("topic.video_analysis_cache.save_failed", error=str(exc))
 
 
 def _build_video_analyses(raw_analyses: object, selected_videos: list[dict]) -> list[TopicVideoAnalysis]:
@@ -231,7 +365,7 @@ def _build_video_analyses(raw_analyses: object, selected_videos: list[dict]) -> 
     analyses: list[TopicVideoAnalysis] = []
     raw_list = [raw for raw in raw_analyses if isinstance(raw, dict)] if isinstance(raw_analyses, list) else []
     for idx, video in enumerate(selected_videos[:MAX_SELECTED_VIDEOS]):
-        raw = by_title.get(video["title"], raw_list[idx] if idx < len(raw_list) else {})
+        raw = by_title.get(video["title"], raw_list[idx] if idx < len(raw_list) else video.get("cached_analysis", {}))
         most_watched_scene = raw.get("most_watched_scene") or video.get("most_watched_scene") or "가장 많이 시청한 장면 데이터 없음"
         most_watched_time = raw.get("most_watched_time") or video.get("most_watched_time") or "data_missing"
         analyses.append(
@@ -308,6 +442,7 @@ def _normalize_video_source(raw: dict) -> dict:
     most_watched_scene = raw.get("most_watched_scene") or raw.get("retention_peak") or "가장 많이 시청한 장면 데이터 없음"
     most_watched_time = raw.get("most_watched_time") or raw.get("retention_peak_time") or "data_missing"
     return {
+        "youtube_video_id": raw.get("youtube_video_id") or raw.get("video_id") or raw.get("id"),
         "title": title,
         "channel": html.unescape(str(raw.get("channel") or "")).strip(),
         "url": raw.get("url") or "",
