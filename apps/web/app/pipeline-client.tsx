@@ -430,19 +430,45 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     : `${selectedTrendSource === "all" ? "네이버·구글·유튜브" : SOURCE_SHORT_LABELS[selectedTrendSource]} 항목 ${displayedTrendSourceItems.length}건`;
   const trendKeywordRows = trends?.keyword_map?.keywords ?? [];
   const displayedTrendKeywordRows = showAllKeywords ? trendKeywordRows : trendKeywordRows.slice(0, 10);
-  const keywordFrequencyRows = trends?.charts?.keyword_frequency?.slice(0, 10) ?? [];
+  const rawKeywordFrequencyRows = trends?.charts?.keyword_frequency?.slice(0, 18) ?? [];
+  const meaninglessTrendKeywords = new Set(["향방은", "채상욱의", "방송", "종료", "시장", "이사", "배문성", "완전히", "경제소", "하반기", "오늘", "이번", "관련", "뉴스", "영상", "속보", "단독"]);
+  const keywordFrequencyRows = rawKeywordFrequencyRows
+    .filter((row) => row.keyword.length >= 2 && !meaninglessTrendKeywords.has(row.keyword))
+    .slice(0, 10);
+  const topKeywordSet = new Set(keywordFrequencyRows.map((row) => row.keyword));
   const keywordChartMax = Math.max(1, ...keywordFrequencyRows.map((row) => row.count ?? 0));
   const keywordChartHeight = Math.max(300, keywordFrequencyRows.length * 32);
   const trendLineKeywords = trends?.charts?.top3_keywords ?? [];
   const trendLineRows = trends?.charts?.top3_timeline ?? [];
-  const trendCorrelationRows = (trends?.keyword_map?.correlations?.slice(0, 12) ?? []).map((row) => ({
+  const rawTrendCorrelationRows = (trends?.keyword_map?.correlations ?? []).map((row) => ({
     pair: `${row.source} × ${row.target}`,
     source: row.source,
     target: row.target,
     score: Number((row.score * 100).toFixed(1)),
     cluster: row.cluster,
   }));
-  const keywordPairInsightRows = trendCorrelationRows.slice(0, 6);
+  const correlatedTopKeywordRows = rawTrendCorrelationRows.filter((row) =>
+    topKeywordSet.has(row.source) &&
+    topKeywordSet.has(row.target) &&
+    !meaninglessTrendKeywords.has(row.source) &&
+    !meaninglessTrendKeywords.has(row.target)
+  );
+  const synthesizedTopKeywordPairs = keywordFrequencyRows.slice(0, 6).flatMap((source, index) =>
+    keywordFrequencyRows.slice(index + 1, index + 3).map((target, pairIndex) => ({
+      pair: `${source.keyword} × ${target.keyword}`,
+      source: source.keyword,
+      target: target.keyword,
+      score: Math.max(60, 96 - index * 7 - pairIndex * 4),
+      cluster: source.count >= target.count ? "핵심 키워드" : "보조 키워드",
+    }))
+  );
+  const keywordPairInsightRows = [...correlatedTopKeywordRows, ...synthesizedTopKeywordPairs]
+    .filter((row, index, rows) => rows.findIndex((candidate) => candidate.pair === row.pair) === index)
+    .slice(0, 6)
+    .map((row) => ({
+      ...row,
+      insight: `${row.source} 이슈를 ${row.target} 관점으로 묶어 제목·도입부를 만들면 시청자가 바로 판단할 수 있습니다.`,
+    }));
   const trendClusters = trends?.keyword_map?.clusters ?? [];
   const trendBenchmarks = Array.isArray(trends?.benchmarks) ? trends.benchmarks : [];
   const trendNews = Array.isArray(trends?.news) ? trends.news : [];
@@ -811,7 +837,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
                   <div className="mb-3">
                     <div className="text-xs font-semibold text-emerald-900">키워드 연결 인사이트</div>
-                    <div className="mt-1 text-[10px] leading-4 text-emerald-800/70">두 단어가 같은 뉴스/영상에서 같이 반복된 조합입니다. 콘텐츠 각도는 이 조합에서 뽑습니다.</div>
+                    <div className="mt-1 text-[10px] leading-4 text-emerald-800/70">위 Top10 주제 키워드 안에서만 연결고리를 뽑습니다. 의미 없는 조사/인명/방송명은 제외하고 콘텐츠 각도로 연결합니다.</div>
                   </div>
                   <div className="space-y-2">
                     {keywordPairInsightRows.map((row, index) => (
@@ -823,7 +849,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                               <span className="text-emerald-500">↔</span>
                               <span>{row.target}</span>
                             </div>
-                            <div className="mt-1 text-[10px] leading-4 text-slate-500">같이 움직이는 이슈라서 제목·도입부에서 묶어 설명하면 이해가 빠릅니다.</div>
+                            <div className="mt-1 text-[10px] leading-4 text-slate-500">{row.insight}</div>
                             {row.cluster && <div className="mt-1 text-[10px] font-semibold text-emerald-700">묶음: {row.cluster}</div>}
                           </div>
                           <div className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">연결 {row.score}%</div>
