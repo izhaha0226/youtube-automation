@@ -235,6 +235,12 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   async function runResearch() {
     setLoadingResearch(true);
     setError(null);
+    setTopics(null);
+    setSelectedTopic(null);
+    setSelectedTopicArchetype(null);
+    setScenario(null);
+    setSelectedArticleIds([]);
+    setSelectedVideoIds([]);
     try {
       const payload = selectedIssues.length > 0
         ? { mode: "trend", category: researchCategory, selected_articles: selectedIssues, trend_keywords: trends?.keywords.slice(0, 20) ?? [] }

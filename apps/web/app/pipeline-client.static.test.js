@@ -29,6 +29,8 @@ assert(source.includes('resumeProduction') && source.includes('getProductionResu
 assert(source.includes('if (item.key === "new-video")'), '제작 리스트의 마지막 진행 단계 이동은 신규 영상 항목에만 적용해야 합니다.');
 assert(source.includes('return item.href;'), '트렌드/주제 제작 리스트는 각 항목의 고유 경로로 이동해야 합니다.');
 assert(source.includes('if (scenario) return "/scenario";'), '시나리오가 있으면 우측 제작 리스트도 단일 시나리오 화면으로 이어져야 합니다.');
+const runResearchBlock = source.slice(source.indexOf('async function runResearch()'), source.indexOf('function toggleVideo'));
+assert(runResearchBlock.includes('setTopics(null);') && runResearchBlock.indexOf('setTopics(null);') < runResearchBlock.indexOf('const payload = selectedIssues.length > 0'), '관련 유튜브 재검색 시 기존 주제/시나리오 결과를 먼저 리셋해야 합니다.');
 assert(!source.includes('if (scenario && research?.session_id) return `/workspace/${research.session_id}`;'), '우측 버튼이 별도 워크스페이스 시나리오로 이동하면 시나리오가 2개처럼 보입니다.');
 assert(source.includes('hydratedDashboard') && source.includes('if (!hydratedDashboard) return;'), '저장된 대시보드가 복원되기 전 빈 상태로 덮어쓰면 안 됩니다.');
 assert(source.includes('클릭하면 현재 시나리오로 이어가기'), '제작 리스트에는 현재 시나리오로 이어진다는 안내가 필요합니다.');
