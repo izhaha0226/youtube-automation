@@ -70,7 +70,7 @@ type ResearchResponse = {
   videos?: { id: string; title: string; channel?: string; url?: string; views?: number }[];
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787";
+const API = (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787").trim().replace(/\/+$/, "");
 
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {

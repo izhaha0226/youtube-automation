@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787";
+const API = (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787").trim().replace(/\/+$/, "");
 
 type Run = {
   run_id: string;

@@ -1,7 +1,7 @@
 type Run = { run_id: string; intent: string; status: string; created_at: string; meta: Record<string, unknown> };
 
 async function getRuns(): Promise<Run[]> {
-  const base = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787";
+  const base = (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8787").trim().replace(/\/+$/, "");
   try {
     const r = await fetch(`${base}/pipeline/runs?limit=50`, { cache: "no-store" });
     if (!r.ok) return [];

@@ -428,24 +428,30 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
     return (
       <div className="space-y-5">
-        <section className="rounded-[28px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)] sm:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <section className="relative overflow-hidden rounded-[34px] border border-white/80 bg-white/90 p-5 shadow-[0_34px_120px_-60px_rgba(14,30,58,0.5)] backdrop-blur sm:p-8">
+          <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[#e6b43c]/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-28 left-1/4 h-72 w-72 rounded-full bg-navy/10 blur-3xl" />
+          <div className="relative grid gap-7 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
             <div>
-              <div className="inline-flex rounded-full bg-navy/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/70">Dashboard</div>
-              <h2 className="mt-4 text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">리치고 유튜브 제작 대시보드</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">제작 리스트를 관리하고, 신규 영상 제작은 파이프라인 순서대로 진행합니다.</p>
+              <div className="inline-flex rounded-full border border-navy/10 bg-navy/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-navy/70">Richgo Studio OS</div>
+              <h2 className="mt-5 max-w-4xl text-3xl font-semibold tracking-[-0.055em] text-slate-950 sm:text-5xl lg:text-6xl">부동산 콘텐츠를<br className="hidden sm:block" /> 판단형 영상으로 끝까지 제작</h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">트렌드 신호, 리치고 관점, 10분 나레이션 게이트까지 한 흐름으로 묶은 제작 컨트롤 타워입니다.</p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button type="button" onClick={startNewVideo} className="inline-flex min-h-[54px] items-center justify-center rounded-2xl bg-navy px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_45px_-24px_rgba(14,30,58,0.75)] transition hover:-translate-y-0.5 hover:bg-slate-950">신규 영상 제작</button>
+                <span className="text-xs font-semibold text-slate-400">HAICo · sukgo · Supermarketing gate live</span>
+              </div>
             </div>
-            <button type="button" onClick={startNewVideo} className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-navy px-5 py-3 text-sm font-semibold text-white">신규 영상 제작</button>
+            <div className="rounded-[28px] border border-slate-200/80 bg-white/70 p-4 shadow-[0_18px_60px_-42px_rgba(15,23,42,0.45)]">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-2xl bg-slate-950 px-4 py-4 text-white"><div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">Queue</div><div className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{productions.length}</div></div>
+                <div className="rounded-2xl bg-[#f4efe4] px-4 py-4 text-navy"><div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-navy/45">Sources</div><div className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{selectedSourceCount}</div></div>
+                <div className="rounded-2xl bg-emerald-50 px-4 py-4 text-emerald-800"><div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700/45">Stage</div><div className="mt-2 text-sm font-semibold leading-tight">{scenario ? "시나리오" : topics ? "주제" : trends ? "트렌드" : "시작 전"}</div></div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5"><div className="text-xs font-semibold text-slate-400">제작 리스트</div><div className="mt-2 text-2xl font-semibold">{productions.length}</div></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-5"><div className="text-xs font-semibold text-slate-400">선택 근거</div><div className="mt-2 text-2xl font-semibold">{selectedSourceCount}</div></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-5"><div className="text-xs font-semibold text-slate-400">현재 단계</div><div className="mt-2 text-lg font-semibold">{scenario ? "시나리오" : topics ? "주제" : trends ? "트렌드" : "시작 전"}</div></div>
-        </section>
-
-        <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">
+        <section className="rounded-[28px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_18px_70px_-48px_rgba(15,23,42,0.35)] backdrop-blur sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold">제작 리스트</h3>
@@ -481,22 +487,22 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           <div className="mt-4 space-y-3">
             {productions.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">삭제된 항목만 있습니다. 복구를 누르면 기본 제작 리스트가 다시 표시됩니다.</div>}
             {productions.map((item) => (
-              <button key={item.key} type="button" onClick={() => resumeProduction(item)} className={`w-full rounded-2xl border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-blue-50/40" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
+              <button key={item.key} type="button" onClick={() => resumeProduction(item)} className={`group w-full rounded-[22px] border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-navy text-white shadow-[0_18px_55px_-35px_rgba(14,30,58,0.8)]" : "border-slate-200 bg-slate-50 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"}`}>
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">{item.title}</div>
-                  <div className="mt-1 text-xs text-slate-500">{item.meta}</div>
-                  <div className="mt-2 text-[11px] font-semibold text-blue-600">클릭하면 마지막 진행 단계로 이어가기</div>
+                  <div className={`text-sm font-semibold ${selectedProduction?.key === item.key ? "text-white" : "text-slate-900"}`}>{item.title}</div>
+                  <div className={`mt-1 text-xs ${selectedProduction?.key === item.key ? "text-white/65" : "text-slate-500"}`}>{item.meta}</div>
+                  <div className={`mt-2 text-[11px] font-semibold ${selectedProduction?.key === item.key ? "text-[#e6b43c]" : "text-blue-600"}`}>클릭하면 마지막 진행 단계로 이어가기</div>
                 </div>
-                <div className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-navy sm:mt-0">{item.status}</div>
+                <div className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold sm:mt-0 ${selectedProduction?.key === item.key ? "bg-white/12 text-white" : "bg-white text-navy"}`}>{item.status}</div>
               </button>
             ))}
           </div>
         </section>
 
         <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-          <a href="/trends" className="rounded-3xl border border-slate-200 bg-white p-5"><div className="text-xs font-semibold text-slate-400">STEP 1</div><div className="mt-2 font-semibold">트렌드분석 → 내용 저장</div><p className="mt-2 text-sm text-slate-500">네이버·구글·유튜브 신호를 분리해서 저장합니다.</p></a>
-          <a href="/topics" className="rounded-3xl border border-slate-200 bg-white p-5"><div className="text-xs font-semibold text-slate-400">STEP 2</div><div className="mt-2 font-semibold">주제 자동화 및 고도화</div><p className="mt-2 text-sm text-slate-500">선정 사유와 리치고 관점을 함께 평가합니다.</p></a>
-          <a href="/scenario" className="rounded-3xl border border-slate-200 bg-white p-5"><div className="text-xs font-semibold text-slate-400">STEP 3</div><div className="mt-2 font-semibold">선택 주제 시나리오</div><p className="mt-2 text-sm text-slate-500">선택된 주제로 대본과 후속 제작물을 만듭니다.</p></a>
+          <a href="/trends" className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_55px_-38px_rgba(15,23,42,0.35)]"><div className="text-xs font-semibold text-slate-400">STEP 1</div><div className="mt-2 font-semibold">트렌드분석 → 내용 저장</div><p className="mt-2 text-sm text-slate-500">네이버·구글·유튜브 신호를 분리해서 저장합니다.</p></a>
+          <a href="/topics" className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_55px_-38px_rgba(15,23,42,0.35)]"><div className="text-xs font-semibold text-slate-400">STEP 2</div><div className="mt-2 font-semibold">주제 자동화 및 고도화</div><p className="mt-2 text-sm text-slate-500">선정 사유와 리치고 관점을 함께 평가합니다.</p></a>
+          <a href="/scenario" className="rounded-3xl border border-slate-200/80 bg-white/85 p-5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_55px_-38px_rgba(15,23,42,0.35)]"><div className="text-xs font-semibold text-slate-400">STEP 3</div><div className="mt-2 font-semibold">선택 주제 시나리오</div><p className="mt-2 text-sm text-slate-500">선택된 주제로 대본과 후속 제작물을 만듭니다.</p></a>
         </section>
       </div>
     );
