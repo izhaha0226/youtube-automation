@@ -16,6 +16,7 @@ class TopicInput(BaseModel):
     must_include: list[str] = Field(default_factory=list)
     current_issues: list[str] = Field(default_factory=list)
     trend_keywords: list[str] = Field(default_factory=list)
+    selected_videos: list[dict] = Field(default_factory=list)
 
 
 class TopicScore(BaseModel):

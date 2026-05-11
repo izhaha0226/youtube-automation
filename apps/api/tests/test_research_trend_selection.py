@@ -94,3 +94,22 @@ def test_expand_session_reuses_existing_news_without_fetching_news(monkeypatch, 
     assert result.videos[0].id == "video-1"
     assert result.videos[0].selected is True
     assert any(video.youtube_video_id == "v2" for video in result.videos)
+
+
+def test_create_from_trend_selection_dedupes_videos_and_unescapes_titles(monkeypatch):
+    monkeypatch.setattr(service, "_persist_session", lambda mode, category, source: "sess-dedupe")
+    monkeypatch.setattr(service, "_replace_candidates", lambda session_id, articles, videos: None)
+    monkeypatch.setattr(
+        service,
+        "fetch_youtube_trending",
+        lambda: [
+            {"video_id": "v1", "title": "&#39;역대급 난리난 부동산 시장&#39;", "channel": "A", "url": "https://youtu.be/v1", "views": 190000, "published": "1일 전"},
+            {"video_id": "v1", "title": "중복 제목", "channel": "A", "url": "https://youtu.be/v1", "views": 190000, "published": "1일 전"},
+            {"video_id": "v2", "title": "서울 집값 분석", "channel": "B", "url": "https://youtu.be/v2", "views": 90000, "published": "1일 전"},
+        ],
+    )
+
+    result = service.create_from_trend_selection(["서울 집값"], trend_keywords=["서울", "집값"])
+
+    assert sorted(video.youtube_video_id for video in result.videos) == ["v1", "v2"]
+    assert any(video.title == "'역대급 난리난 부동산 시장'" for video in result.videos)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend,
@@ -12,6 +12,7 @@ import type { TrendData, TopicCandidate, TopicResult, ScenarioOutput, ResearchSe
 const SECTION_LABELS: Record<number, string> = { 0: "Hook (오프닝)", 1: "문제 제기 (현상)", 2: "핵심 분석 (데이터 연결)", 3: "경제 연계 (거시 관점)", 4: "부동산 전망 & 대응" };
 const PIE_COLORS = ["#0E1E3A", "#10B981", "#3B82F6", "#E6B43C"];
 const LINE_COLORS = ["#0E1E3A", "#3B82F6", "#E6B43C"];
+const MAX_SELECTED_VIDEOS = 3;
 const PERIODS = [
   { value: "today", label: "오늘" },
   { value: "3d", label: "최근 3일" },
@@ -41,6 +42,22 @@ function compactUrl(raw?: string) {
   } catch {
     return raw.length > 42 ? `${raw.slice(0, 39)}…` : raw;
   }
+}
+
+
+function decodeHtmlEntities(value?: string) {
+  if (!value) return "";
+  if (typeof document === "undefined") {
+    return value
+      .replace(/&amp;/g, "&")
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+  }
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = value;
+  return textarea.value;
 }
 
 function formatViews(n: number) {
@@ -242,10 +259,22 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
 
   function toggleVideo(id: string) {
-    setSelectedVideoIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    setSelectedVideoIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_SELECTED_VIDEOS) {
+        setError(`영상 분석은 최대 ${MAX_SELECTED_VIDEOS}개까지만 선택 가능합니다.`);
+        return prev;
+      }
+      setError(null);
+      return [...prev, id];
+    });
   }
 
   async function analyze() {
+    if (!canAnalyzeVideos) {
+      setError(`관련 유튜브에서 1~${MAX_SELECTED_VIDEOS}개 영상을 선택해야 영상 분석 기반 주제 생성이 가능합니다.`);
+      return;
+    }
     setLoadingTopic(true); setError(null); setTopics(null); setScenario(null); setSelectedTopic(null);
     try {
       const r = await fetch("/api/topics", {
@@ -256,8 +285,9 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           current_issues: [
             ...selectedIssues,
             ...(research?.articles.filter((a) => selectedArticleIds.includes(a.id)).map((a) => `[ARTICLE] ${a.title}`) ?? []),
-            ...(research?.videos.filter((v) => selectedVideoIds.includes(v.id)).map((v) => `[VIDEO] ${v.title}`) ?? []),
+            ...selectedResearchVideos.map((v) => `[VIDEO] ${decodeHtmlEntities(v.title)}`),
           ],
+          selected_videos: selectedResearchVideos.map((v) => ({ ...v, title: decodeHtmlEntities(v.title), channel: decodeHtmlEntities(v.channel) })),
           trend_keywords: [
             ...(trends?.keywords.slice(0, 15) ?? []),
             ...((research?.source.keywords ?? []).slice(0, 10)),
@@ -289,7 +319,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           archetype: selectedTopicArchetype ?? topics?.selected_archetype ?? "판단형",
           keywords: mustTags,
           selected_articles: research?.articles.filter((a) => selectedArticleIds.includes(a.id)) ?? [],
-          selected_videos: research?.videos.filter((v) => selectedVideoIds.includes(v.id)) ?? [],
+          selected_videos: selectedResearchVideos.map((v) => ({ ...v, title: decodeHtmlEntities(v.title), channel: decodeHtmlEntities(v.channel) })),
           target_duration_min: 10,
           target_duration_max: 12,
           session_id: research?.session_id ?? undefined,
@@ -372,7 +402,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const allTrendSourceItems = trendSections.flatMap((section) =>
     section.items.map((item, index) => ({
       ...item,
-      itemKey: `${section.id}-${index}-${item.title}`,
+      itemKey: `${section.id}-${index}-${decodeHtmlEntities(item.title)}`,
       sourceId: section.id,
       sourceLabel: SOURCE_SHORT_LABELS[section.id] ?? section.label,
     }))
@@ -407,6 +437,17 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const trendBenchmarks = Array.isArray(trends?.benchmarks) ? trends.benchmarks : [];
   const trendNews = Array.isArray(trends?.news) ? trends.news : [];
   const trendYoutube = Array.isArray(trends?.youtube) ? trends.youtube : [];
+  const researchVideos = useMemo(() => {
+    const seen = new Set<string>();
+    return (research?.videos ?? []).filter((item) => {
+      const key = item.youtube_video_id || item.url || decodeHtmlEntities(item.title);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [research?.videos]);
+  const selectedResearchVideos = researchVideos.filter((v) => selectedVideoIds.includes(v.id)).slice(0, MAX_SELECTED_VIDEOS);
+  const canAnalyzeVideos = selectedResearchVideos.length > 0 && selectedResearchVideos.length <= MAX_SELECTED_VIDEOS;
   const benchmarkTopByChannel = trendBenchmarks.length > 0
     ? Object.values(trendBenchmarks.reduce<Record<string, TrendData["benchmarks"][number]>>((acc, item) => {
       const key = item.channel || "채널 미상";
@@ -489,7 +530,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
             {productions.map((item) => (
               <button key={item.key} type="button" onClick={() => resumeProduction(item)} className={`group w-full rounded-[22px] border p-4 text-left transition sm:flex sm:items-center sm:justify-between ${selectedProduction?.key === item.key ? "border-navy bg-navy text-white shadow-[0_18px_55px_-35px_rgba(14,30,58,0.8)]" : "border-slate-200 bg-slate-50 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"}`}>
                 <div>
-                  <div className={`text-sm font-semibold ${selectedProduction?.key === item.key ? "text-white" : "text-slate-900"}`}>{item.title}</div>
+                  <div className={`text-sm font-semibold ${selectedProduction?.key === item.key ? "text-white" : "text-slate-900"}`}>{decodeHtmlEntities(item.title)}</div>
                   <div className={`mt-1 text-xs ${selectedProduction?.key === item.key ? "text-white/65" : "text-slate-500"}`}>{item.meta}</div>
                   <div className={`mt-2 text-[11px] font-semibold ${selectedProduction?.key === item.key ? "text-[#e6b43c]" : "text-blue-600"}`}>클릭하면 마지막 진행 단계로 이어가기</div>
                 </div>
@@ -680,11 +721,11 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">{item.sourceLabel}</span>
-                                <div className="text-xs font-medium leading-snug text-slate-800">{item.title}</div>
+                                <div className="text-xs font-medium leading-snug text-slate-800">{decodeHtmlEntities(item.title)}</div>
                               </div>
                               <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
                                 {item.source && <span className="font-medium text-slate-500">{item.source}</span>}
-                                {item.channel && <span className="font-medium text-slate-500">{item.channel}</span>}
+                                {item.channel && <span className="font-medium text-slate-500">채널 {decodeHtmlEntities(item.channel)}</span>}
                                 {item.pub && <span>{formatDate(item.pub)}</span>}
                                 {item.published && <span>{formatDate(item.published)}</span>}
                                 {(item.views ?? 0) > 0 && <span className="font-semibold text-navy">조회 {formatViews(item.views!)}</span>}
@@ -901,26 +942,26 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
           {research && (
             <>
               <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
-                <span>영상 {research.videos.length}개</span>
-                <span>선택 {selectedVideoIds.length}개</span>
+                <span>영상 {researchVideos.length}개</span>
+                <span>선택 {selectedResearchVideos.length}/{MAX_SELECTED_VIDEOS}개</span>
               </div>
               <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto">
-                {research.videos.length === 0 && (
+                {researchVideos.length === 0 && (
                   <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-400">
                     아직 불러온 유튜브가 없어. 이 경우는 API 키가 없거나 검색 결과가 비어있는 경우야.
                   </div>
                 )}
-                {research.videos.map((item) => {
+                {researchVideos.map((item) => {
                   const selected = selectedVideoIds.includes(item.id);
                   return (
                     <div key={item.id} className={`rounded-lg border p-3 ${selected ? "border-navy bg-blue-50" : "border-slate-200 bg-white"}`}>
                       <div className="flex items-start gap-2">
                         <button onClick={() => toggleVideo(item.id)} className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[9px] ${selected ? "border-navy bg-navy text-white" : "border-slate-300"}`}>{selected ? "✓" : ""}</button>
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-medium text-slate-800">{item.title}</div>
+                          <div className="text-xs font-medium text-slate-800">{decodeHtmlEntities(item.title)}</div>
                           <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
-                            {item.channel && <span className="font-medium text-slate-500">{item.channel}</span>}
-                            {(item.views ?? 0) > 0 && <span className="font-semibold text-navy">{formatViews(item.views!)}</span>}
+                            {item.channel && <span className="font-medium text-slate-500">채널 {decodeHtmlEntities(item.channel)}</span>}
+                            {(item.views ?? 0) > 0 && <span className="font-semibold text-navy">조회수 {formatViews(item.views!)}</span>}
                             {item.published_at && <span>{formatDate(item.published_at)}</span>}
                             {item.creative_analysis?.hook_type && <span className="rounded bg-amber-50 px-1 py-0.5 font-semibold text-amber-700">{hookLabel(item.creative_analysis.hook_type)}</span>}
                             {typeof item.creative_analysis?.score === "number" && <span className="rounded bg-emerald-50 px-1 py-0.5 font-semibold text-emerald-700">소재 {item.creative_analysis.score}/10</span>}
@@ -947,7 +988,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
         {!research && !topics && <div className="mt-6 text-center text-sm text-slate-400">관련 유튜브를 고른 뒤 분석 버튼을 눌러 우리 주제를 만듭니다.</div>}
         {research && (
           <div className="mt-3">
-            <button disabled={loadingTopic || (!intent && !selectedArticleIds.length && !selectedVideoIds.length && selectedIssues.length === 0)} onClick={analyze} className="w-full rounded-lg bg-navy py-2 text-sm font-semibold text-white disabled:opacity-40">{loadingTopic ? "분석 중..." : "선택 영상 분석해서 주제 만들기"}</button>
+            <button disabled={loadingTopic || !canAnalyzeVideos} onClick={analyze} className="w-full rounded-lg bg-navy py-2 text-sm font-semibold text-white disabled:opacity-40">{loadingTopic ? "분석 중..." : canAnalyzeVideos ? "선택 영상 분석해서 주제 만들기" : "영상을 먼저 선택해 주세요"}</button>
           </div>
         )}
         {topics && (

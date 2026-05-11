@@ -116,3 +116,62 @@ def test_narration_enforces_10_minimum_when_llm_returns_short(monkeypatch, tmp_p
     assert "Supermarketing" not in result.text_ko
     assert "실수요자" in result.text_ko
     assert len(result.sentences) > 20
+
+
+def test_topic_prompt_receives_selected_video_analysis(monkeypatch):
+    fake = FakeLLM({
+        "recommended_topics": [{
+            "title": "조회수 높은 영상 도입부를 변환한 부동산 판단 기준",
+            "reason": "선택 영상의 조회수와 훅 구조를 근거로 도입부를 설계합니다.",
+            "score": {"popularity": 5, "economy": 4, "realestate": 5, "virality": 4, "richgo_fit": 5, "discussion": 4},
+            "risk": "가장 많이 시청한 장면 데이터 없음",
+            "archetype": "판단형",
+            "keywords": ["부동산"],
+            "discovery_hypothesis": "선택 영상 근거",
+            "strategy_hypothesis": "리치고 변환",
+            "tactical_hypothesis": "첫 10초 훅, 첫 30초 문제 제기, 1분 내 데이터 제시",
+            "verification_signals": ["CTR", "유지율"],
+            "failure_criteria": ["가장 많이 시청한 장면 데이터 없음"],
+            "decision_label": "iterate",
+            "next_loop": "실제 유지율 확인",
+        }],
+        "selected_topic": "조회수 높은 영상 도입부를 변환한 부동산 판단 기준",
+        "selected_reason": "선택 영상 기반",
+        "selected_archetype": "판단형",
+    })
+    monkeypatch.setattr(selector, "llm", lambda temperature=0.5: fake)
+
+    selector.select_topic(TopicInput(
+        current_issues=["[VIDEO] &#39;서울 집값&#39;"],
+        trend_keywords=["부동산"],
+        selected_videos=[{"title": "&#39;서울 집값&#39;", "channel": "A", "views": 24000, "creative_analysis": {"hook_type": "informational", "score": 8}}],
+    ))
+
+    prompt = fake.calls[0]["user"]
+    assert "선택 영상 분석 원본" in prompt
+    assert "video-analysis" in prompt
+    assert "24000" in prompt
+    assert "가장 많이 시청한 장면 데이터 없음" in prompt
+
+
+def test_topic_rejects_video_issue_without_selected_video_data():
+    try:
+        selector.select_topic(TopicInput(current_issues=["[VIDEO] 제목만 있음"], trend_keywords=["부동산"]))
+    except ValueError as exc:
+        assert "선택 영상 원본 데이터" in str(exc)
+    else:
+        raise AssertionError("영상 원본 없이 주제를 만들면 안 됩니다.")
+
+
+def test_topic_rejects_more_than_three_selected_videos():
+    videos = [{"title": f"영상 {idx}", "channel": "A", "views": 1000} for idx in range(4)]
+    try:
+        selector.select_topic(TopicInput(
+            current_issues=[f"[VIDEO] 영상 {idx}" for idx in range(4)],
+            trend_keywords=["부동산"],
+            selected_videos=videos,
+        ))
+    except ValueError as exc:
+        assert "최대 3개" in str(exc)
+    else:
+        raise AssertionError("선택 영상 4개 이상은 차단해야 합니다.")

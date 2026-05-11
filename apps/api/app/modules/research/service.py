@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 import uuid
 from collections import Counter
@@ -21,6 +22,31 @@ from app.schemas import (
 )
 
 log = get_logger(__name__)
+
+
+def _clean_text(value: str | None) -> str:
+    return html.unescape(value or "").strip()
+
+
+def _video_key(item: dict) -> str:
+    return _clean_text(item.get("video_id") or item.get("url") or item.get("title") or "")
+
+
+def _dedupe_raw_videos(items: list[dict], limit: int) -> list[dict]:
+    deduped: list[dict] = []
+    seen: set[str] = set()
+    for item in items:
+        key = _video_key(item)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        cleaned = dict(item)
+        cleaned["title"] = _clean_text(cleaned.get("title"))
+        cleaned["channel"] = _clean_text(cleaned.get("channel"))
+        deduped.append(cleaned)
+        if len(deduped) >= limit:
+            break
+    return deduped
 
 
 def _extract_keywords(text: str, limit: int = 8) -> list[str]:
@@ -133,7 +159,7 @@ def create_from_url(url: str, category: str | None = None) -> ResearchSessionRes
     raw_articles = fetch_news()
     raw_videos = fetch_youtube_trending()
     scored_articles = sorted(raw_articles, key=lambda x: _article_score(x, keywords), reverse=True)[:12]
-    scored_videos = sorted(raw_videos, key=lambda x: _video_score(x, keywords), reverse=True)[:12]
+    scored_videos = _dedupe_raw_videos(sorted(raw_videos, key=lambda x: _video_score(x, keywords), reverse=True), 12)
     articles = [
         ArticleCandidate(
             id=str(uuid.uuid4()),
@@ -200,7 +226,7 @@ def create_from_category(category: str) -> ResearchSessionResponse:
             relevance_score=1.0,
             creative_analysis=item.get("creative_analysis", {}),
         )
-        for item in raw_videos[:10]
+        for item in _dedupe_raw_videos(raw_videos, 10)
     ]
     session_id = _persist_session("category", category, source)
     _replace_candidates(session_id, articles, videos)
@@ -236,11 +262,14 @@ def create_from_trend_selection(
         )
         for title in clean_titles
     ]
-    raw_videos = sorted(
-        fetch_youtube_trending(),
-        key=lambda x: (_video_keyword_overlap(x, keywords), _video_score(x, keywords)),
-        reverse=True,
-    )[:15]
+    raw_videos = _dedupe_raw_videos(
+        sorted(
+            fetch_youtube_trending(),
+            key=lambda x: (_video_keyword_overlap(x, keywords), _video_score(x, keywords)),
+            reverse=True,
+        ),
+        15,
+    )
     videos = [
         VideoCandidate(
             id=str(uuid.uuid4()),
@@ -320,7 +349,7 @@ def expand_session(session_id: str, article_ids: list[str], video_ids: list[str]
         mode = sess.mode
         category = sess.category
     keywords = [kw for kw, _ in Counter(keywords).most_common(10)]
-    raw_videos = sorted(fetch_youtube_trending(), key=lambda x: _video_score(x, keywords), reverse=True)[:15]
+    raw_videos = _dedupe_raw_videos(sorted(fetch_youtube_trending(), key=lambda x: _video_score(x, keywords), reverse=True), 15)
     articles = [ArticleCandidate(**row) for row in existing_articles]
     videos_by_key: dict[str, VideoCandidate] = {}
     for row in existing_videos:

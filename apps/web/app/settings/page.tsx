@@ -43,16 +43,16 @@ export default function SettingsPage() {
           <label className="block">
             <span className="text-xs font-medium text-slate-500">기본 모델</span>
             <select value={model} onChange={(e) => setModel(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-              <option value="gpt-5.4">GPT-5.4</option>
+              <option value="gpt-5.4">gpt-5.5</option>
               <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-5.4-mini">GPT-5.4 mini</option>
+              <option value="gpt-5.4-mini">gpt-5.5 mini</option>
             </select>
           </label>
           <label className="block">
             <span className="text-xs font-medium text-slate-500">백업 모델</span>
             <select value={backupModel} onChange={(e) => setBackupModel(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
               <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-5.4">GPT-5.4</option>
+              <option value="gpt-5.4">gpt-5.5</option>
             </select>
           </label>
         </div>

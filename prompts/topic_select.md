@@ -13,6 +13,15 @@
 - 꼭 포함할 관점: {{must_include}}
 - 이번 주 이슈 후보: {{current_issues}}
 - 트렌드 키워드: {{trend_keywords}}
+- 선택 영상 분석 원본: {{selected_video_analysis}}
+
+
+## 선택 영상 분석 필수 규칙
+- source_mode가 `video-analysis`이면 선택 영상 분석 원본만 근거로 주제를 만든다. 선택 영상이 없거나 `[]`이면 주제를 만들지 말고 data_missing으로 판단해야 한다.
+- 선택 영상별로 다음을 반드시 비교한다: 분량(duration), 조회수(views), 채널명, 업로드 시점, hook_type, creative_score, patterns, most_watched_scene.
+- `most_watched_scene`이 data_missing이면 "가장 많이 시청한 장면 데이터 없음"을 risk 또는 failure_criteria에 명시한다. 절대 임의로 장면을 지어내지 않는다.
+- tactical_hypothesis에는 우리 영상 도입부에 가져올 구조를 반드시 쓴다: 첫 10초 훅, 첫 30초 문제 제기, 1분 내 데이터 제시 방식.
+- 단순 제목/이슈 요약이 아니라 "왜 그 영상이 조회를 얻었는지 → 우리 도입부에 어떻게 변환할지"를 써라.
 
 ## 김기원 대표 철학
 {{kim_kiwon_philosophy}}

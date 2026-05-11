@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import json
 
 from app.core.config import settings
@@ -11,9 +12,16 @@ from app.modules.trend.scanner import scan  # used as fallback when no pre-fetch
 from app.schemas import TopicCandidate, TopicInput, TopicResult, TopicScore
 
 log = get_logger(__name__)
+MAX_SELECTED_VIDEOS = 3
 
 
 def select_topic(payload: TopicInput) -> TopicResult:
+    selected_videos = [_normalize_video_source(v) for v in payload.selected_videos if _normalize_video_source(v)]
+    if len(selected_videos) > MAX_SELECTED_VIDEOS:
+        raise ValueError(f"영상 분석은 최대 {MAX_SELECTED_VIDEOS}개까지만 가능합니다.")
+    if payload.current_issues and any(str(issue).startswith("[VIDEO]") for issue in payload.current_issues) and not selected_videos:
+        raise ValueError("영상 분석 주제 생성에는 선택 영상 원본 데이터가 필요합니다. 관련 유튜브에서 영상을 먼저 선택하세요.")
+
     if payload.current_issues or payload.trend_keywords:
         current_issues = payload.current_issues
         trend_keywords = payload.trend_keywords
@@ -34,7 +42,8 @@ def select_topic(payload: TopicInput) -> TopicResult:
         must_include=", ".join(payload.must_include) or "(없음)",
         current_issues=json.dumps(current_issues, ensure_ascii=False),
         trend_keywords=", ".join(trend_keywords[:30]) or "(없음)",
-        source_mode=("research-backed" if payload.current_issues or payload.trend_keywords else "trend-scan"),
+        selected_video_analysis=json.dumps(selected_videos, ensure_ascii=False) if selected_videos else "[]",
+        source_mode=("video-analysis" if selected_videos else "research-backed" if payload.current_issues or payload.trend_keywords else "trend-scan"),
         target_speed="오늘 바로 촬영 가능한 주제를 우선",
         kim_kiwon_philosophy=philosophy_context(),
         editorial_rules=editorial_rules_context(),
@@ -140,3 +149,30 @@ def _fallback_topic_result(payload: TopicInput, current_issues: list[str], trend
 
 def _clean_issue(issue: str) -> str:
     return issue.replace("[ARTICLE]", "").replace("[VIDEO]", "").strip()
+
+
+def _normalize_video_source(raw: dict) -> dict:
+    if not isinstance(raw, dict):
+        return {}
+    title = html.unescape(str(raw.get("title") or "")).strip()
+    if not title:
+        return {}
+    analysis = raw.get("creative_analysis") or {}
+    views = raw.get("views") or 0
+    try:
+        views = int(views)
+    except (TypeError, ValueError):
+        views = 0
+    most_watched_scene = raw.get("most_watched_scene") or raw.get("retention_peak") or "가장 많이 시청한 장면 데이터 없음"
+    return {
+        "title": title,
+        "channel": html.unescape(str(raw.get("channel") or "")).strip(),
+        "url": raw.get("url") or "",
+        "views": views,
+        "published_at": raw.get("published_at") or raw.get("published") or "",
+        "duration": raw.get("duration") or raw.get("duration_text") or "분량 데이터 없음",
+        "most_watched_scene": most_watched_scene,
+        "hook_type": analysis.get("hook_type") or raw.get("hook_type") or "unknown",
+        "creative_score": analysis.get("score"),
+        "patterns": analysis.get("patterns") or [],
+    }
