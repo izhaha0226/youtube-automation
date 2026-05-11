@@ -7,6 +7,7 @@ import {
   LineChart, Line,
 } from "recharts";
 import { saveDashboard, loadDashboard, clearDashboard } from "./store";
+import StatusModal from "./components/status-modal";
 import type { TrendData, TopicCandidate, TopicResult, ScenarioOutput, ResearchSession } from "./store";
 
 const SECTION_LABELS: Record<number, string> = { 0: "Hook (오프닝)", 1: "문제 제기 (현상)", 2: "핵심 분석 (데이터 연결)", 3: "경제 연계 (거시 관점)", 4: "부동산 전망 & 대응" };
@@ -469,6 +470,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
     return (
       <div className="space-y-5">
+        <StatusModal open={Boolean(error)} title="작업을 진행할 수 없습니다" message={error} tone="error" onClose={() => setError(null)} />
         <section className="relative overflow-hidden rounded-[34px] border border-white/80 bg-white/90 p-5 shadow-[0_34px_120px_-60px_rgba(14,30,58,0.5)] backdrop-blur sm:p-8">
           <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[#e6b43c]/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-28 left-1/4 h-72 w-72 rounded-full bg-navy/10 blur-3xl" />
@@ -551,6 +553,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
   return (
     <div className="space-y-5">
+      <StatusModal open={Boolean(error)} title="작업을 진행할 수 없습니다" message={error} tone="error" onClose={() => setError(null)} />
       <section className="overflow-hidden rounded-[28px] border border-white/70 bg-white/95 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)] backdrop-blur">
         <div className="grid gap-6 px-5 py-6 sm:px-6 lg:grid-cols-[1.35fr_0.85fr] lg:px-8 lg:py-8">
           <div className="space-y-5">
@@ -933,7 +936,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMust(mustInput); } }}
               placeholder="Enter로 추가" className="rounded border border-slate-200 px-2 py-0.5 text-xs focus:outline-none" />
           </div>
-          {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+
         </section>
       <div className="space-y-4">
         <section className="rounded-[24px] border border-slate-200/90 bg-white/95 p-5 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.25)] sm:p-6">

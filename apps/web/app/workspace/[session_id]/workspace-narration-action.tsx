@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import StatusModal from "../../components/status-modal";
 
 type NarrationOutput = {
   text_ko: string;
@@ -50,7 +51,7 @@ export default function WorkspaceNarrationAction({
         </button>
       </div>
 
-      {error && <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">{error}</div>}
+      <StatusModal open={Boolean(error)} title="작업을 진행할 수 없습니다" message={error} tone="error" onClose={() => setError(null)} />
 
       {narration && (
         <div className="mt-4 space-y-4">

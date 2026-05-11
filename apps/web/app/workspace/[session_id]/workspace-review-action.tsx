@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import StatusModal from "../../components/status-modal";
 
 type ReviewOutput = {
   passed: boolean;
@@ -73,7 +74,7 @@ export default function WorkspaceReviewAction({
         </div>
       </div>
 
-      {error && <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-600">{error}</div>}
+      <StatusModal open={Boolean(error)} title="작업을 진행할 수 없습니다" message={error} tone="error" onClose={() => setError(null)} />
 
       {review && (
         <div className={`mt-4 rounded-xl border p-4 ${review.passed ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>

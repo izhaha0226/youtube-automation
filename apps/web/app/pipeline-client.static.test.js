@@ -41,5 +41,7 @@ assert(source.includes('displayedTrendSourceItems') && source.includes('selected
 assert(source.includes('benchmarkTopByChannel') && source.includes('채널당 최고 영상 1개만 표시'), '유튜브 벤치마크 차트는 채널별 1개 최고 영상으로 중복 채널을 막아야 합니다.');
 assert(source.includes('xl:grid-cols-2'), '하단 트렌드 분석 섹션은 2열 구성이어야 합니다.');
 assert(source.indexOf('카테고리별 이슈 분포') < source.indexOf('유튜브 벤치마크 채널별 최고 조회수'), '카테고리 분포와 유튜브 벤치마크는 분리된 섹션이어야 합니다.');
+assert(source.includes('StatusModal') && source.includes('open={Boolean(error)}'), '오류/알림 메시지는 인라인 텍스트가 아니라 모달로 표시해야 합니다.');
+assert(!source.includes('text-red-600">{error}</p>'), '인라인 오류 문구를 남기면 안 됩니다.');
 
 console.log('static UI requirements satisfied');
