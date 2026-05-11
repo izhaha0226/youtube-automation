@@ -24,3 +24,6 @@ apps/web/tsconfig.tsbuildinfo
 .ruff_cache/
 youtube_token.json
 oauth_state.json
+backups/
+data/final_topics/
+docs/notes/auto/
