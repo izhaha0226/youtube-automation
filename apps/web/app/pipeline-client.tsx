@@ -383,7 +383,6 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
 
   function getProductionResumeHref(item: ProductionDraft & { key: string; href: string }) {
     if (item.key === "new-video") {
-      if (scenario && research?.session_id) return `/workspace/${research.session_id}`;
       if (scenario) return "/scenario";
       if (topics || selectedTopic) return "/topics";
       if (research || trends) return "/trends";
@@ -534,7 +533,7 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
                 <div>
                   <div className={`text-sm font-semibold ${selectedProduction?.key === item.key ? "text-white" : "text-slate-900"}`}>{decodeHtmlEntities(item.title)}</div>
                   <div className={`mt-1 text-xs ${selectedProduction?.key === item.key ? "text-white/65" : "text-slate-500"}`}>{item.meta}</div>
-                  <div className={`mt-2 text-[11px] font-semibold ${selectedProduction?.key === item.key ? "text-[#e6b43c]" : "text-blue-600"}`}>클릭하면 마지막 진행 단계로 이어가기</div>
+                  <div className={`mt-2 text-[11px] font-semibold ${selectedProduction?.key === item.key ? "text-[#e6b43c]" : "text-blue-600"}`}>클릭하면 현재 시나리오로 이어가기</div>
                 </div>
                 <div className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold sm:mt-0 ${selectedProduction?.key === item.key ? "bg-white/12 text-white" : "bg-white text-navy"}`}>{item.status}</div>
               </button>

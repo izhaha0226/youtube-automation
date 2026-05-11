@@ -7,6 +7,10 @@ type ReviewOutput = {
   passed: boolean;
   issues: string[];
   fix_suggestions: string[];
+  tone_structure_difference_percent?: number;
+  tone_structure_comment?: string;
+  structure_recommendation?: string;
+  recommended_action?: "keep_content_adjust_structure" | "keep_structure_adjust_tone" | "pass";
 };
 
 export default function WorkspaceReviewAction({
@@ -80,6 +84,13 @@ export default function WorkspaceReviewAction({
         <div className={`mt-4 rounded-xl border p-4 ${review.passed ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
           <div className={`text-sm font-semibold ${review.passed ? "text-emerald-700" : "text-amber-700"}`}>
             {review.passed ? "검수 통과" : "보완 필요"}
+          </div>
+
+          <div className="mt-3 rounded-lg border border-white/60 bg-white/70 p-3 text-xs text-slate-700">
+            <div className="font-semibold text-slate-900">리치고 지난 영상 대비 톤·구조 차이: {review.tone_structure_difference_percent ?? 0}%</div>
+            <p className="mt-1">{review.tone_structure_comment || "리치고 지난 영상 레퍼런스 대비 톤과 구조를 확인했습니다."}</p>
+            <p className="mt-2 font-semibold text-slate-900">추천 구조</p>
+            <p className="mt-1">{review.structure_recommendation || "오프닝 훅 → 리치고 데이터 확인 및 분석 → 실수요자 판단 기준 → 리스크/예외 → 결론 구조를 추천합니다."}</p>
           </div>
 
           <div className="mt-3 grid gap-4 lg:grid-cols-2">

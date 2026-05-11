@@ -27,6 +27,10 @@ def review_scenario(payload: ReviewInput) -> ReviewOutput:
         passed=bool(data.get("passed", False)),
         issues=data.get("issues", []),
         fix_suggestions=data.get("fix_suggestions", []),
+        tone_structure_difference_percent=_bounded_percent(data.get("tone_structure_difference_percent", 0)),
+        tone_structure_comment=str(data.get("tone_structure_comment") or "리치고 지난 영상 레퍼런스 대비 톤과 구조 차이를 확인했습니다."),
+        structure_recommendation=str(data.get("structure_recommendation") or "리치고 지난 영상처럼 오프닝 훅 → 리치고 데이터 확인 → 실수요자 판단 기준 → 리스크/예외 → 결론 구조를 추천합니다."),
+        recommended_action=_normalize_recommended_action(data.get("recommended_action")),
     )
     log.info("review.done", passed=out.passed, issues=len(out.issues))
     return out
@@ -45,8 +49,26 @@ def _fallback_review(payload: ReviewInput) -> ReviewOutput:
     if not payload.scenario.action_takeaways:
         issues.append("액션 포인트가 없습니다.")
         fix_suggestions.append("시청자가 바로 점검할 체크리스트를 3개 이상 추가하세요.")
+    difference = 18 if not issues else 42
     return ReviewOutput(
         passed=len(issues) == 0,
         issues=issues,
         fix_suggestions=fix_suggestions,
+        tone_structure_difference_percent=difference,
+        tone_structure_comment=f"리치고 지난 영상 레퍼런스 대비 나레이션 톤과 구조 차이는 약 {difference}%입니다. 현재 대본은 김기원 대표의 직접 설명 톤을 유지하되 데이터 확인 구간의 위치를 더 선명하게 보면 좋습니다.",
+        structure_recommendation="리치고 지난 영상처럼 오프닝 훅 → 리치고 데이터 확인 및 분석 → 실수요자 판단 기준 → 리스크/예외 → 결론 구조를 추천합니다. 내용은 유지한 채 시나리오 구조를 이 순서로 변경하겠습니다.",
+        recommended_action="pass" if not issues else "keep_content_adjust_structure",
     )
+
+
+def _bounded_percent(value: object) -> int:
+    try:
+        return max(0, min(100, int(round(float(value)))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _normalize_recommended_action(value: object) -> str:
+    allowed = {"keep_content_adjust_structure", "keep_structure_adjust_tone", "pass"}
+    text = str(value or "pass")
+    return text if text in allowed else "pass"

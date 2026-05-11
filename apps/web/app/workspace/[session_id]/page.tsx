@@ -32,6 +32,10 @@ type WorkspaceResponse = {
     passed: boolean;
     issues: string[];
     fix_suggestions: string[];
+    tone_structure_difference_percent?: number;
+    tone_structure_comment?: string;
+    structure_recommendation?: string;
+    recommended_action?: "keep_content_adjust_structure" | "keep_structure_adjust_tone" | "pass";
   } | null;
   narration?: {
     text_ko: string;

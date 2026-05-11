@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from app.core.llm import LLMError, llm
 from app.core.logging import get_logger
@@ -54,6 +55,7 @@ def generate_scenario(payload: ScenarioInput) -> ScenarioOutput:
         opening_title=data.get("opening_title", ""),
         estimated_duration_min=data.get("estimated_duration_min", payload.target_duration_min),
     )
+    out = _sanitize_scenario_output(_ensure_richgo_data_section(out))
     log.info(
         "scenario.gen.done",
         hook_len=len(out.hook),
@@ -78,7 +80,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
         _section(
             "1. 오늘 이 이슈를 봐야 하는 이유",
             "뉴스 반응이 아니라 판단 기준으로 접근",
-            f"오늘 주제는 '{topic}'입니다. {news_a}만 보면 시장이 곧바로 한 방향으로 움직일 것처럼 보일 수 있습니다. 그런데 리치고식으로 보면 첫 번째 질문은 '오르냐, 내리냐'가 아닙니다. 이 뉴스가 실제 매수자와 세입자의 행동을 바꿀 만큼 강한 신호인지부터 봐야 합니다. 예를 들어 금리 뉴스가 나왔더라도 대출 한도, 월 상환액, 전세 가격이 같이 움직이지 않으면 체감 시장은 바로 바뀌지 않습니다. 그래서 오늘은 기사 제목을 따라가는 게 아니라, {focus}가 같은 방향으로 움직이는지 확인하겠습니다. 끝까지 보시면 지금 움직일 사람과 기다릴 사람을 나누는 기준을 잡으실 수 있습니다.",
+            f"오늘 주제는 '{topic}'입니다. {news_a}만 보면 시장이 곧바로 한 방향으로 움직일 것처럼 보일 수 있습니다. 그런데 김기원 대표 관점에서 보면 첫 번째 질문은 '오르냐, 내리냐'가 아닙니다. 이 뉴스가 실제 매수자와 세입자의 행동을 바꿀 만큼 강한 신호인지부터 봐야 합니다. 예를 들어 금리 뉴스가 나왔더라도 대출 한도, 월 상환액, 전세 가격이 같이 움직이지 않으면 체감 시장은 바로 바뀌지 않습니다. 그래서 오늘은 기사 제목을 따라가는 게 아니라, {focus}가 같은 방향으로 움직이는지 확인하겠습니다. 끝까지 보시면 지금 움직일 사람과 기다릴 사람을 나누는 기준을 잡으실 수 있습니다.",
             "지금 필요한 것은 결론보다 체크리스트입니다.",
             "article" if payload.selected_articles else "mixed",
             news_a,
@@ -100,7 +102,15 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
             news_c,
         ),
         _section(
-            "4. 투자자는 출구와 보유비용을 먼저 봐야 한다",
+            "4. 리치고 데이터 확인 및 분석",
+            "리치고 데이터로 거래·전세·대출 신호 확인",
+            f"여기서 중간 점검을 하겠습니다. 지금부터는 기사 표현을 잠깐 내려놓고 리치고 데이터를 확인해서 분석하는 구간입니다. 먼저 관심 지역의 최근 실거래가와 거래량이 같이 움직이는지 봅니다. 가격만 올랐는데 거래량이 줄었다면 시장 전체가 강해진 게 아니라 일부 거래만 튄 것일 수 있습니다. 다음으로 전세가율과 전세 매물 변화를 봅니다. 전세가 받쳐주지 않으면 매매 상승은 오래 버티기 어렵습니다. 마지막으로 대출 금리와 월 상환액을 같이 보겠습니다. 같은 {first_keyword} 이슈라도 내 월 부담이 감당 가능한지에 따라 결론은 완전히 달라집니다. 이 데이터 확인을 거쳐야 오늘 주제가 실제 행동 신호인지, 아니면 더 지켜봐야 할 뉴스인지 구분할 수 있습니다.",
+            "리치고 데이터로 실거래·거래량·전세가율·월 상환액을 확인합니다.",
+            "internal",
+            "리치고 데이터 확인 구간",
+        ),
+        _section(
+            "5. 투자자는 출구와 보유비용을 먼저 봐야 한다",
             "좋은 이야기보다 빠져나올 수 있는 구조",
             f"투자자라면 관점이 또 달라집니다. 뉴스에서 특정 지역이나 정책 수혜가 언급되면 기회처럼 보일 수 있습니다. 하지만 투자 판단에서는 들어가는 이유보다 나오는 이유가 더 중요합니다. 예를 들어 단기 호재로 가격이 움직이는 지역이라도 거래량이 얇으면 원하는 시점에 팔기 어렵습니다. 보유세, 이자, 공실 가능성까지 계산하면 겉으로 보이는 수익률이 크게 줄어들 수 있습니다. 그래서 {first_keyword} 이슈를 볼 때도 '얼마나 오를까'보다 '누가 다음 매수자가 될까'를 확인해야 합니다. 이 질문에 답이 안 나오면 좋은 뉴스도 아직 내 투자는 아닐 수 있습니다.",
             "투자는 진입보다 출구와 보유비용이 먼저입니다.",
@@ -108,7 +118,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
             first_keyword,
         ),
         _section(
-            "5. 반대로 봐야 할 리스크와 예외",
+            "6. 반대로 봐야 할 리스크와 예외",
             "모든 뉴스가 같은 방향으로 작동하지 않음",
             "여기서 반드시 반대로 봐야 할 부분도 있습니다. 같은 뉴스라도 서울 핵심지, 수도권 외곽, 지방 구축 시장에 미치는 영향은 다릅니다. 금리 부담이 낮아지는 뉴스는 매수 심리를 살릴 수 있지만, 소득 대비 가격이 너무 높은 지역에서는 거래 회복이 제한될 수 있습니다. 정책 완화 뉴스도 마찬가지입니다. 규제가 풀렸다고 모든 지역이 오르는 게 아니라, 이미 수요가 있는 지역에서 먼저 반응합니다. 그래서 시청자분들은 본인 지역을 볼 때 '전국 평균'이 아니라 우리 동네 입주 물량, 전세가율, 급매 소진 속도를 봐야 합니다. 예외를 보지 않으면 뉴스는 맞았는데 내 판단은 틀릴 수 있습니다.",
             "전국 뉴스는 지역별로 다르게 번역해야 합니다.",
@@ -116,7 +126,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
             "지역별 예외와 리스크",
         ),
         _section(
-            "6. 지금 숫자로 확인할 체크포인트",
+            "7. 지금 숫자로 확인할 체크포인트",
             "감정 대신 확인할 숫자를 고정",
             f"이제 실제로 무엇을 확인할지 정리해보겠습니다. 첫 번째는 거래량입니다. 가격이 올랐다는 뉴스보다 중요한 것은 그 가격에 실제 거래가 따라붙었는지입니다. 두 번째는 전세가율입니다. 전세가 받쳐주지 않는 매매 상승은 오래가기 어렵습니다. 세 번째는 대출 가능 금액과 월 상환액입니다. 같은 {first_keyword} 뉴스라도 소득이 높은 가구와 대출 여력이 부족한 가구에게는 완전히 다르게 작동합니다. 네 번째는 매물의 질입니다. 급매가 사라진 것인지, 아니면 안 팔리는 매물이 가격만 높여놓은 것인지 구분해야 합니다. 다섯 번째는 실패 기준입니다. 숫자를 확인했는데 거래량이 줄고 전세가가 밀리고 대출 부담이 커진다면, 뉴스가 좋아 보여도 이번 판단은 보류해야 합니다. 이 다섯 가지를 같이 보면 뉴스가 실제 시장을 움직이는지, 아니면 분위기만 만든 것인지 훨씬 분명해집니다.",
             "거래량·전세가율·월 상환액·매물 질을 같이 봅니다.",
@@ -124,7 +134,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
             "핵심 지표 체크리스트",
         ),
         _section(
-            "7. 리치고식 최종 판단 프레임",
+            "8. 최종 판단 프레임",
             "가격·금리·정책·지역 수요를 합쳐 판단",
             f"정리하면 오늘의 핵심은 단순합니다. 첫째, 뉴스가 말하는 방향과 실제 숫자가 같은 방향인지 봅니다. 둘째, 내 포지션이 실수요자인지 투자자인지 먼저 나눕니다. 셋째, {focus} 중에서 최소 두 가지 이상이 같은 결론을 가리킬 때만 행동 후보로 올립니다. 예를 들어 매수 대기자라면 관심 단지의 급매가 줄고, 전세가가 버티고, 대출 부담이 감당 가능할 때 검토할 수 있습니다. 반대로 뉴스는 좋아 보여도 거래량이 없고 호가만 올라가면 기다리는 편이 낫습니다. 특히 내 집 마련을 고민하는 분들은 남들이 산다는 말보다 내가 버틸 수 있는 기간을 먼저 봐야 합니다. 투자자라면 상승 가능성보다 손실이 났을 때 버틸 현금흐름을 먼저 계산해야 합니다. 시장은 맞히는 대상이 아니라 대응하는 대상입니다. 오늘 영상의 목적도 정답을 찍는 것이 아니라, 여러분이 자기 상황에 맞는 기준을 갖게 하는 것입니다.",
             "두 개 이상의 신호가 맞을 때만 행동 후보로 봅니다.",
@@ -135,7 +145,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
     body = [section["script"] for section in body_sections]
     opening_title = f"{topic}, 지금 움직여도 될까?"
     hook_30s = f"{focus} 때문에 시장이 헷갈립니다. 오늘은 사야 하는 사람과 기다려야 하는 사람을 3가지 기준으로 나눠보겠습니다."
-    return ScenarioOutput(
+    return _sanitize_scenario_output(_ensure_richgo_data_section(ScenarioOutput(
         hook=hook_30s,
         hook_30s=hook_30s,
         bridge_3min="먼저 뉴스의 분위기보다 숫자와 조건을 분리해 보겠습니다. 지금 시장은 같은 이슈라도 실수요자와 투자자에게 완전히 다르게 작동합니다.",
@@ -152,7 +162,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
         title_candidates=[
             f"{topic}, 지금 사도 될까? 판단 기준 3가지",
             f"{first_keyword} 이슈 이후 부동산 시장, 기다릴 사람과 움직일 사람",
-            "집값 뉴스에 흔들리지 않는 리치고식 매수 체크리스트",
+            "집값 뉴스에 흔들리지 않는 매수 체크리스트",
         ],
         thumbnail_candidates=[
             "지금 사도 될까?",
@@ -162,7 +172,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
         opening="오늘 시장은 단순히 오른다, 내린다로 말하기 어렵습니다. 그래서 기준부터 잡아야 합니다.",
         opening_title=opening_title,
         estimated_duration_min=payload.target_duration_min,
-    )
+    )))
 
 
 def _section(
@@ -236,3 +246,48 @@ def _normalize_body_sections(sections: list[dict], body: list[str]) -> list[dict
         for index, script in enumerate(body or [])
         if str(script).strip()
     ]
+
+
+def _strip_forbidden_scenario_terms(text: str) -> str:
+    text = re.sub(r"(?<!\S)#[^\s#]+", "", text or "")
+    text = text.replace("리치고식", "김기원 대표 기준")
+    return re.sub(r"[ \t]{2,}", " ", text).strip()
+
+
+def _sanitize_scenario_output(out: ScenarioOutput) -> ScenarioOutput:
+    data = out.model_dump()
+    for key in ["hook", "hook_30s", "bridge_3min", "conclusion", "cta", "opening", "opening_title"]:
+        data[key] = _strip_forbidden_scenario_terms(str(data.get(key, "")))
+    data["body"] = [_strip_forbidden_scenario_terms(str(item)) for item in data.get("body", [])]
+    data["title_candidates"] = [_strip_forbidden_scenario_terms(str(item)) for item in data.get("title_candidates", [])]
+    data["thumbnail_candidates"] = [_strip_forbidden_scenario_terms(str(item)) for item in data.get("thumbnail_candidates", [])]
+    sanitized_sections = []
+    for section in data.get("body_sections", []):
+        sanitized = dict(section)
+        for key in ["heading", "summary", "script", "narration", "reference_hint", "viewer_takeaway"]:
+            sanitized[key] = _strip_forbidden_scenario_terms(str(sanitized.get(key, "")))
+        sanitized_sections.append(sanitized)
+    data["body_sections"] = sanitized_sections
+    return ScenarioOutput(**data)
+
+
+def _ensure_richgo_data_section(out: ScenarioOutput) -> ScenarioOutput:
+    if any("리치고 데이터" in section.heading or "리치고 데이터를 확인" in section.narration for section in out.body_sections):
+        return out
+    data_section = {
+        "heading": "리치고 데이터 확인 및 분석",
+        "summary": "중간에 리치고 데이터로 실거래·전세·대출 신호를 확인",
+        "script": "여기서 중간 점검을 하겠습니다. 지금부터는 기사 표현을 잠깐 내려놓고 리치고 데이터를 확인해서 분석하는 구간입니다. 최근 실거래가와 거래량이 같이 움직이는지, 전세가율과 전세 매물이 버티는지, 대출 금리와 월 상환액이 감당 가능한지를 차례로 보겠습니다. 이 데이터 확인을 거쳐야 오늘 주제가 실제 행동 신호인지, 아니면 더 지켜봐야 할 뉴스인지 구분할 수 있습니다.",
+        "narration": "여기서 중간 점검을 하겠습니다. 지금부터는 기사 표현을 잠깐 내려놓고 리치고 데이터를 확인해서 분석하는 구간입니다. 최근 실거래가와 거래량이 같이 움직이는지, 전세가율과 전세 매물이 버티는지, 대출 금리와 월 상환액이 감당 가능한지를 차례로 보겠습니다. 이 데이터 확인을 거쳐야 오늘 주제가 실제 행동 신호인지, 아니면 더 지켜봐야 할 뉴스인지 구분할 수 있습니다.",
+        "reference_type": "internal",
+        "reference_hint": "리치고 데이터 확인 구간",
+        "viewer_takeaway": "뉴스 해석 전 실제 숫자로 확인한다.",
+    }
+    body_sections = [section.model_dump() if hasattr(section, "model_dump") else dict(section) for section in out.body_sections]
+    insert_at = min(3, len(body_sections))
+    body_sections.insert(insert_at, data_section)
+    body = [str(section.get("script") or section.get("narration") or "") for section in body_sections]
+    data = out.model_dump()
+    data["body_sections"] = body_sections
+    data["body"] = body
+    return ScenarioOutput(**data)

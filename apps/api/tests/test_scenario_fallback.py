@@ -40,3 +40,38 @@ def test_generate_scenario_returns_fallback_when_llm_unavailable(monkeypatch):
     assert "실수요" in joined
     assert "서울 아파트 거래량이 다시 늘었다" in joined
     assert len(joined) > 2500
+    assert "리치고식" not in joined
+    assert any("리치고 데이터" in section.heading for section in result.body_sections)
+    assert any("리치고 데이터를 확인" in section.narration for section in result.body_sections)
+
+
+def test_scenario_prompt_sets_kim_kiwon_speaker_and_data_section(monkeypatch):
+    class FakeLLM:
+        def __init__(self):
+            self.calls = []
+
+        def generate_json(self, system: str, user: str):
+            self.calls.append({"system": system, "user": user})
+            return {
+                "hook": "훅",
+                "hook_30s": "30초 훅",
+                "bridge_3min": "3분 브릿지",
+                "body": ["요약"],
+                "body_sections": [{"heading": "리치고 데이터 확인", "script": "리치고 데이터를 확인합니다.", "narration": "리치고 데이터를 확인합니다."}],
+                "conclusion": "결론",
+                "cta": "CTA",
+                "title_candidates": ["제목"],
+                "thumbnail_candidates": ["썸네일"],
+                "estimated_duration_min": 10,
+                "archetype": "판단형",
+            }
+
+    fake = FakeLLM()
+    monkeypatch.setattr(generator, "llm", lambda temperature=0.6: fake)
+
+    generator.generate_scenario(ScenarioInput(topic="전세와 매매 판단", keywords=["전세"]))
+
+    prompt = fake.calls[0]["user"]
+    assert "김기원 대표가 직접 말하는 1인칭" in prompt
+    assert "리치고식" in prompt and "금지" in prompt
+    assert "리치고 데이터 확인 및 분석" in prompt

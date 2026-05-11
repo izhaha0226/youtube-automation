@@ -202,6 +202,10 @@ class ReviewOutput(BaseModel):
     passed: bool
     issues: list[str] = Field(default_factory=list)
     fix_suggestions: list[str] = Field(default_factory=list)
+    tone_structure_difference_percent: int = 0
+    tone_structure_comment: str = ""
+    structure_recommendation: str = ""
+    recommended_action: Literal["keep_content_adjust_structure", "keep_structure_adjust_tone", "pass"] = "pass"
 
 
 # --- Narration / Subtitle ---

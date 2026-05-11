@@ -38,6 +38,10 @@ def test_review_returns_fallback_when_llm_unavailable(monkeypatch):
 
     assert result.passed is True
     assert result.issues == []
+    assert 0 <= result.tone_structure_difference_percent <= 100
+    assert "지난 영상" in result.tone_structure_comment
+    assert "구조" in result.structure_recommendation
+    assert result.recommended_action in {"keep_content_adjust_structure", "keep_structure_adjust_tone", "pass"}
 
 
 def test_narration_returns_fallback_when_llm_unavailable(monkeypatch, tmp_path):
