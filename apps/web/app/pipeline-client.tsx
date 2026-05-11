@@ -350,19 +350,21 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
     setDeleteProductionKey(null);
   }
 
-  function getProductionResumeHref(itemHref: string) {
-    if (scenario && research?.session_id) return `/workspace/${research.session_id}`;
-    if (scenario) return "/scenario";
-    if (topics || selectedTopic) return "/topics";
-    if (research || trends) return "/trends";
-    return itemHref;
+  function getProductionResumeHref(item: ProductionDraft & { key: string; href: string }) {
+    if (item.key === "new-video") {
+      if (scenario && research?.session_id) return `/workspace/${research.session_id}`;
+      if (scenario) return "/scenario";
+      if (topics || selectedTopic) return "/topics";
+      if (research || trends) return "/trends";
+    }
+    return item.href;
   }
 
   function resumeProduction(item: ProductionDraft & { key: string; href: string }) {
     setSelectedProductionKey(item.key);
     setDeleteProductionKey(null);
     setEditingProductionKey(null);
-    window.location.href = getProductionResumeHref(item.href);
+    window.location.href = getProductionResumeHref(item);
   }
 
   const selectedSourceCount = selectedArticleIds.length + selectedVideoIds.length + selectedIssues.length;
