@@ -431,14 +431,18 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
   const trendKeywordRows = trends?.keyword_map?.keywords ?? [];
   const displayedTrendKeywordRows = showAllKeywords ? trendKeywordRows : trendKeywordRows.slice(0, 10);
   const keywordFrequencyRows = trends?.charts?.keyword_frequency?.slice(0, 10) ?? [];
+  const keywordChartMax = Math.max(1, ...keywordFrequencyRows.map((row) => row.count ?? 0));
   const keywordChartHeight = Math.max(300, keywordFrequencyRows.length * 32);
   const trendLineKeywords = trends?.charts?.top3_keywords ?? [];
   const trendLineRows = trends?.charts?.top3_timeline ?? [];
   const trendCorrelationRows = (trends?.keyword_map?.correlations?.slice(0, 12) ?? []).map((row) => ({
     pair: `${row.source} × ${row.target}`,
+    source: row.source,
+    target: row.target,
     score: Number((row.score * 100).toFixed(1)),
     cluster: row.cluster,
   }));
+  const keywordPairInsightRows = trendCorrelationRows.slice(0, 6);
   const trendClusters = trends?.keyword_map?.clusters ?? [];
   const trendBenchmarks = Array.isArray(trends?.benchmarks) ? trends.benchmarks : [];
   const trendNews = Array.isArray(trends?.news) ? trends.news : [];
@@ -770,31 +774,63 @@ export default function PipelineClient({ view = "dashboard" }: { view?: Pipeline
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="mb-2 text-xs font-semibold text-slate-600">키워드 차트 Top 10</div>
-                  <ResponsiveContainer width="100%" height={keywordChartHeight}>
-                    <BarChart data={keywordFrequencyRows} layout="vertical" margin={{ left: 8, right: 10, top: 6, bottom: 6 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis type="number" tick={{ fontSize: 10 }} />
-                      <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={150} interval={0} minTickGap={0} />
-                      <Tooltip contentStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="count" fill="#0E1E3A" radius={[0, 4, 4, 0]} barSize={14} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-[0_10px_35px_-28px_rgba(15,23,42,0.35)]">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-700">키워드 차트 Top 10</div>
+                      <div className="mt-1 text-[10px] leading-4 text-slate-400">오늘 수집한 뉴스·영상에서 가장 많이 반복된 단어입니다.</div>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500">빈도</span>
+                  </div>
+                  <div className="space-y-2 md:hidden">
+                    {keywordFrequencyRows.map((row, index) => (
+                      <div key={row.keyword} className="rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                        <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px]">
+                          <div className="min-w-0 font-semibold text-slate-800"><span className="mr-1.5 text-slate-400">{index + 1}</span>{row.keyword}</div>
+                          <div className="shrink-0 font-bold text-navy">{row.count}회</div>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                          <div className="h-full rounded-full bg-navy" style={{ width: `${Math.max(8, Math.round(((row.count ?? 0) / keywordChartMax) * 100))}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="hidden md:block">
+                    <ResponsiveContainer width="100%" height={keywordChartHeight}>
+                      <BarChart data={keywordFrequencyRows} layout="vertical" margin={{ left: 8, right: 10, top: 6, bottom: 6 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis type="number" tick={{ fontSize: 10 }} />
+                        <YAxis type="category" dataKey="keyword" tick={{ fontSize: 10 }} width={150} interval={0} minTickGap={0} />
+                        <Tooltip contentStyle={{ fontSize: 11 }} />
+                        <Bar dataKey="count" fill="#0E1E3A" radius={[0, 4, 4, 0]} barSize={14} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="mb-1 text-xs font-semibold text-slate-600">함께 자주 언급된 키워드</div>
-                  <div className="mb-2 text-[10px] text-slate-400">같은 뉴스/영상 안에서 함께 나온 키워드 조합입니다.</div>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={trendCorrelationRows} layout="vertical" margin={{ left: 88, right: 12 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis type="number" tick={{ fontSize: 10 }} unit="%" />
-                      <YAxis type="category" dataKey="pair" tick={{ fontSize: 9 }} width={84} />
-                      <Tooltip contentStyle={{ fontSize: 11 }} formatter={(value: unknown) => `${value}%`} />
-                      <Bar dataKey="score" fill="#10B981" radius={[0, 4, 4, 0]} barSize={12} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-emerald-900">키워드 연결 인사이트</div>
+                    <div className="mt-1 text-[10px] leading-4 text-emerald-800/70">두 단어가 같은 뉴스/영상에서 같이 반복된 조합입니다. 콘텐츠 각도는 이 조합에서 뽑습니다.</div>
+                  </div>
+                  <div className="space-y-2">
+                    {keywordPairInsightRows.map((row, index) => (
+                      <div key={`${row.pair}-${index}`} className="rounded-xl border border-emerald-100 bg-white p-3 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-900">
+                              <span>{row.source}</span>
+                              <span className="text-emerald-500">↔</span>
+                              <span>{row.target}</span>
+                            </div>
+                            <div className="mt-1 text-[10px] leading-4 text-slate-500">같이 움직이는 이슈라서 제목·도입부에서 묶어 설명하면 이해가 빠릅니다.</div>
+                            {row.cluster && <div className="mt-1 text-[10px] font-semibold text-emerald-700">묶음: {row.cluster}</div>}
+                          </div>
+                          <div className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">연결 {row.score}%</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

@@ -16,7 +16,10 @@ assert(source.includes('키워드 순위 Top 10'), '키워드 순위는 기본 T
 assert(source.includes('더보기'), '키워드 순위 더보기 버튼이 필요합니다.');
 assert(source.includes('bg-blue-600') && source.includes('hover:bg-blue-700'), '트렌드 스캔 실행 버튼은 파란색이어야 합니다.');
 assert(!source.includes('상관관계 강한 키워드 페어'), '어려운 상관관계 문구는 제거해야 합니다.');
-assert(source.includes('함께 자주 언급된 키워드'), '키워드 페어는 쉬운 표현으로 설명해야 합니다.');
+assert(source.includes('키워드 연결 인사이트'), '키워드 페어는 쉬운 인사이트 카드로 설명해야 합니다.');
+assert(source.includes('콘텐츠 각도는 이 조합에서 뽑습니다.'), '하단 키워드 연결의 의미를 콘텐츠 관점으로 설명해야 합니다.');
+assert(source.includes('md:hidden') && source.includes('hidden md:block'), '모바일은 차트 대신 읽기 쉬운 카드형 키워드 순위를 보여야 합니다.');
+assert(source.includes('keywordPairInsightRows') && source.includes('연결 {row.score}%'), '하단 상관 차트는 카드형 연결 점수로 바꿔야 합니다.');
 assert(source.includes('선택한 뉴스로 다음 단계 이동'), '선택 뉴스 다음 버튼은 뉴스 목록 하단 문맥에 있어야 합니다.');
 assert(source.indexOf('트렌드 스캔 실행') < source.indexOf('선택한 뉴스로 다음 단계 이동'), '선택 뉴스 다음 버튼은 스캔 버튼 영역이 아니라 하단에 있어야 합니다.');
 assert(source.includes('keywordChartHeight') && source.includes('height={keywordChartHeight}'), '키워드 차트 Top 10 전체 항목을 보여주도록 동적 높이가 필요합니다.');
