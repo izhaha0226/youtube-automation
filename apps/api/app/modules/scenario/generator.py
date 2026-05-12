@@ -144,7 +144,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
     ]
     body = [section["script"] for section in body_sections]
     opening_title = f"{topic}, 지금 움직여도 될까?"
-    hook_30s = f"{focus} 때문에 시장이 헷갈립니다. 오늘은 사야 하는 사람과 기다려야 하는 사람을 3가지 기준으로 나눠보겠습니다."
+    hook_30s = _build_fallback_hook_30s(topic)
     return _sanitize_scenario_output(_ensure_richgo_data_section(ScenarioOutput(
         hook=hook_30s,
         hook_30s=hook_30s,
@@ -192,6 +192,16 @@ def _section(
         "reference_hint": reference_hint,
         "viewer_takeaway": viewer_takeaway,
     }
+
+
+def _build_fallback_hook_30s(topic: str) -> str:
+    clean_topic = re.sub(r"\s+", " ", topic or "오늘 이 이슈").strip()
+    return (
+        f"오늘 주제는 '{clean_topic}'입니다. "
+        "문제는 이걸 보고 지금 사야 하는 사람과 기다려야 하는 사람이 완전히 갈린다는 겁니다. "
+        "오늘은 키워드를 따라가는 게 아니라 실거래가, 거래량, 전세가율, 대출 금리와 월 상환액 기준으로 "
+        "내 상황에서 움직여도 되는지 판단하는 3가지 기준을 잡아보겠습니다."
+    )
 
 
 def _source_titles(sources: list[dict]) -> list[str]:

@@ -33,7 +33,8 @@ def test_generate_scenario_returns_fallback_when_llm_unavailable(monkeypatch):
     assert result.title_candidates
     assert result.thumbnail_candidates
     assert result.archetype == "판단형"
-    assert "부동산" in result.hook_30s
+    assert "부동산 · 금리 · 서울 때문에" not in result.hook_30s
+    assert "키워드를 따라가는 게 아니라" in result.hook_30s
     assert len(result.body_sections) >= 6
     joined = "\n".join(section.narration for section in result.body_sections)
     assert "뉴스" in joined
@@ -75,3 +76,5 @@ def test_scenario_prompt_sets_kim_kiwon_speaker_and_data_section(monkeypatch):
     assert "김기원 대표가 직접 말하는 1인칭" in prompt
     assert "리치고식" in prompt and "금지" in prompt
     assert "리치고 데이터 확인 및 분석" in prompt
+    assert "키워드를 나열해 훅 문장으로 만들면 실패" in prompt
+    assert "시청자 불안/오해 → 오늘 볼 판단 기준 → 얻는 이익" in prompt
