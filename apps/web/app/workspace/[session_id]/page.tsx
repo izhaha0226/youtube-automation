@@ -1,3 +1,4 @@
+import MissingWorkspaceModal from "./missing-workspace-modal";
 import WorkspaceNarrationAction from "./workspace-narration-action";
 import WorkspaceReviewAction from "./workspace-review-action";
 import WorkspaceSubtitleAction from "./workspace-subtitle-action";
@@ -110,9 +111,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ sess
     return (
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-slate-900">시나리오 워크스페이스</h2>
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-          해당 세션의 워크스페이스를 찾지 못했어. 먼저 홈에서 리서치 → 주제 선택 → 시나리오 생성까지 한 번 돌려줘.
-        </div>
+        <MissingWorkspaceModal />
       </div>
     );
   }

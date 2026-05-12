@@ -75,6 +75,12 @@ const layoutSource = fs.readFileSync('app/layout.tsx', 'utf8');
 assert(layoutSource.includes('ActiveNavLinks'), '왼쪽/상단 메뉴는 현재 경로 active 표시 컴포넌트를 사용해야 합니다.');
 assert(layoutSource.includes('aria-current="page"') || fs.existsSync('app/components/active-nav-links.tsx'), '현재 페이지 메뉴에는 aria-current page가 필요합니다.');
 
+const workspaceSource = fs.readFileSync('app/workspace/[session_id]/page.tsx', 'utf8');
+const missingWorkspaceModalSource = fs.readFileSync('app/workspace/[session_id]/missing-workspace-modal.tsx', 'utf8');
+assert(workspaceSource.includes('MissingWorkspaceModal'), '워크스페이스 누락 오류는 인라인 경고가 아니라 모달 컴포넌트로 띄워야 합니다.');
+assert(!workspaceSource.includes('border-rose-200 bg-rose-50 p-6 text-sm text-rose-700'), '워크스페이스 누락 오류를 인라인 빨간 박스로 보여주면 안 됩니다.');
+assert(missingWorkspaceModalSource.includes('StatusModal') && missingWorkspaceModalSource.includes('워크스페이스를 찾지 못했어'), '워크스페이스 누락 오류 모달은 StatusModal을 사용해야 합니다.');
+
 const prompterSource = fs.existsSync('app/prompter/page.tsx') ? fs.readFileSync('app/prompter/page.tsx', 'utf8') : '';
 assert(prompterSource.includes('프롬프터 모드'), '별도 프롬프터 페이지가 필요합니다.');
 assert(prompterSource.includes('requestAnimationFrame'), '프롬프터는 자동으로 글자가 위로 올라가야 합니다.');
