@@ -34,7 +34,7 @@ def test_generate_scenario_returns_fallback_when_llm_unavailable(monkeypatch):
     assert result.thumbnail_candidates
     assert result.archetype == "판단형"
     assert "부동산 · 금리 · 서울 때문에" not in result.hook_30s
-    assert "키워드를 따라가는 게 아니라" in result.hook_30s
+    assert "기사 제목이 아니라" in result.hook_30s
     assert len(result.body_sections) >= 6
     joined = "\n".join(section.narration for section in result.body_sections)
     assert "뉴스" in joined
@@ -110,10 +110,10 @@ def test_scenario_supermarketing_audit_rewrites_weak_llm_output(monkeypatch):
 
     joined = "\n".join(section.narration for section in result.body_sections)
     assert "부동산 · 데이터분석 · 리치고 때문에" not in result.hook_30s
-    assert "키워드를 따라가는 게 아니라" in result.hook_30s
+    assert "기사 제목이 아니라" in result.hook_30s
     assert len(result.title_candidates) == 5
     assert all(title != "제목" for title in result.title_candidates)
     assert any("기다릴" in title or "놓치는" in title for title in result.title_candidates)
     assert len(result.body_sections) >= 6
-    assert len(joined) > 2500
+    assert len(joined) >= 4500
     assert any("리치고 데이터" in section.heading for section in result.body_sections)

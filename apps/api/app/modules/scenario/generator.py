@@ -142,8 +142,9 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
             focus,
         ),
     ]
+    body_sections = [_expand_section_script(section, first_keyword) for section in body_sections]
     body = [section["script"] for section in body_sections]
-    opening_title = f"{topic}, 지금 움직여도 될까?"
+    opening_title = _build_opening_title(topic, first_keyword)
     hook_30s = _build_fallback_hook_30s(topic)
     return _supermarketing_audit_scenario(_sanitize_scenario_output(_ensure_richgo_data_section(ScenarioOutput(
         hook=hook_30s,
@@ -190,14 +191,47 @@ def _section(
     }
 
 
+def _build_opening_title(topic: str, first_keyword: str) -> str:
+    clean_topic = re.sub(r"\s+", " ", topic or "").strip()
+    if clean_topic and len(clean_topic) <= 34:
+        return f"{clean_topic}, 지금 사도 될까?"
+    return f"{first_keyword} 뉴스 뒤에 숨은 진짜 매수 신호"
+
+
 def _build_fallback_hook_30s(topic: str) -> str:
-    clean_topic = re.sub(r"\s+", " ", topic or "오늘 이 이슈").strip()
+    clean_topic = re.sub(r"\s+", " ", topic or "부동산 시장").strip()
     return (
-        f"오늘 주제는 '{clean_topic}'입니다. "
-        "문제는 이걸 보고 지금 사야 하는 사람과 기다려야 하는 사람이 완전히 갈린다는 겁니다. "
-        "오늘은 키워드를 따라가는 게 아니라 실거래가, 거래량, 전세가율, 대출 금리와 월 상환액 기준으로 "
-        "내 상황에서 움직여도 되는지 판단하는 3가지 기준을 잡아보겠습니다."
+        f"'{clean_topic}' 이 뉴스만 보고 움직이면 가장 비싼 타이밍에 들어갈 수 있습니다. "
+        "진짜 질문은 집값이 오르냐가 아니라, 내 동네에서 거래가 붙고 전세가 받쳐주고 월 상환액을 버틸 수 있느냐입니다. "
+        "오늘은 기사 제목이 아니라 실거래가·거래량·전세가율·대출 부담 4가지 숫자로, 지금 살 사람과 기다릴 사람을 갈라보겠습니다."
     )
+
+
+def _expand_section_script(section: dict, first_keyword: str) -> dict:
+    script = str(section.get("script") or section.get("narration") or "").strip()
+    heading = str(section.get("heading") or "").strip()
+    expansion = (
+        "\n\n여기서 시청자가 바로 적용할 질문은 세 가지입니다. "
+        "첫째, 이 변화가 내 관심 단지의 최근 실거래와 같은 방향으로 확인되는가. "
+        "둘째, 전세 가격과 전세 매물이 매매 가격을 받쳐주는가. "
+        "셋째, 지금 대출을 실행했을 때 월 상환액을 3년 이상 무리 없이 감당할 수 있는가입니다. "
+        f"특히 {first_keyword} 이슈는 headline으로 보면 모두에게 같은 기회처럼 보이지만, 실제로는 보유 현금, 기존 주거 형태, 이사 시점에 따라 완전히 다른 결론이 납니다. "
+        "그래서 이 구간의 결론은 '좋다/나쁘다'가 아니라 '내 조건에서 행동 가능한 신호인가'로 정리해야 합니다. "
+        "숫자 두 개 이상이 같은 방향이면 검토 후보, 하나만 움직이면 관망, 숫자와 뉴스가 엇갈리면 보류가 기본값입니다."
+    )
+    next_section = dict(section)
+    if len(script) < 650:
+        script = f"{script}{expansion}"
+    if heading.startswith("4.") and "리치고" in heading:
+        script += (
+            "\n\n리치고에서는 이 순서로 보면 됩니다. 관심 지역을 먼저 고르고, 최근 3개월 실거래 흐름을 본 뒤, "
+            "같은 기간 거래량이 늘었는지 줄었는지 확인합니다. 그다음 전세가율과 입주 물량을 같이 봅니다. "
+            "가격은 올랐는데 거래량이 줄고 전세가율이 밀리면 추격 매수 신호가 아니라 경고 신호입니다. "
+            "반대로 거래량이 회복되고 전세가가 버티고 월 상환액이 소득 안에 들어오면 행동 후보로 올릴 수 있습니다."
+        )
+    next_section["script"] = script
+    next_section["narration"] = script
+    return next_section
 
 
 def _supermarketing_audit_scenario(
@@ -275,8 +309,11 @@ def _is_weak_title(title: str) -> bool:
 
 def _build_supermarketing_titles(topic: str, first_keyword: str) -> list[str]:
     clean_topic = re.sub(r"\s+", " ", topic or first_keyword or "부동산 시장").strip()
+    compact_topic = clean_topic
+    if len(compact_topic) > 34:
+        compact_topic = first_keyword or "부동산 시장"
     return [
-        f"{clean_topic}, 지금 사도 되는 사람과 기다릴 사람",
+        f"{compact_topic}, 지금 사도 되는 사람과 기다릴 사람",
         f"대부분 놓치는 {first_keyword} 이후 집값 판단 기준 3가지",
         "집값보다 먼저 봐야 할 전세·대출 신호",
         "오르는 뉴스에 속지 않는 실수요자 체크리스트",
