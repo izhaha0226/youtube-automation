@@ -55,7 +55,7 @@ def generate_scenario(payload: ScenarioInput) -> ScenarioOutput:
         opening_title=data.get("opening_title", ""),
         estimated_duration_min=data.get("estimated_duration_min", payload.target_duration_min),
     )
-    out = _sanitize_scenario_output(_ensure_richgo_data_section(out))
+    out = _supermarketing_audit_scenario(_sanitize_scenario_output(_ensure_richgo_data_section(out)), payload)
     log.info(
         "scenario.gen.done",
         hook_len=len(out.hook),
@@ -145,7 +145,7 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
     body = [section["script"] for section in body_sections]
     opening_title = f"{topic}, 지금 움직여도 될까?"
     hook_30s = _build_fallback_hook_30s(topic)
-    return _sanitize_scenario_output(_ensure_richgo_data_section(ScenarioOutput(
+    return _supermarketing_audit_scenario(_sanitize_scenario_output(_ensure_richgo_data_section(ScenarioOutput(
         hook=hook_30s,
         hook_30s=hook_30s,
         bridge_3min="먼저 뉴스의 분위기보다 숫자와 조건을 분리해 보겠습니다. 지금 시장은 같은 이슈라도 실수요자와 투자자에게 완전히 다르게 작동합니다.",
@@ -159,20 +159,16 @@ def _fallback_scenario(payload: ScenarioInput) -> ScenarioOutput:
             "정책 뉴스는 매수자·보유자·매도자 중 누구에게 유리한지 나눠 읽는다.",
         ],
         cta="댓글에 관심 지역과 상황을 남겨주시면 다음 영상에서 판단 기준으로 다시 풀어보겠습니다.",
-        title_candidates=[
-            f"{topic}, 지금 사도 될까? 판단 기준 3가지",
-            f"{first_keyword} 이슈 이후 부동산 시장, 기다릴 사람과 움직일 사람",
-            "집값 뉴스에 흔들리지 않는 매수 체크리스트",
-        ],
+        title_candidates=_build_supermarketing_titles(topic, first_keyword),
         thumbnail_candidates=[
             "지금 사도 될까?",
-            "기다릴 사람 vs 움직일 사람",
-            "부동산 판단 기준 3가지",
+            "기다릴까? 움직일까?",
+            "판단 기준 3가지",
         ],
         opening="오늘 시장은 단순히 오른다, 내린다로 말하기 어렵습니다. 그래서 기준부터 잡아야 합니다.",
         opening_title=opening_title,
         estimated_duration_min=payload.target_duration_min,
-    )))
+    ))), payload, replace_short_body=False)
 
 
 def _section(
@@ -202,6 +198,90 @@ def _build_fallback_hook_30s(topic: str) -> str:
         "오늘은 키워드를 따라가는 게 아니라 실거래가, 거래량, 전세가율, 대출 금리와 월 상환액 기준으로 "
         "내 상황에서 움직여도 되는지 판단하는 3가지 기준을 잡아보겠습니다."
     )
+
+
+def _supermarketing_audit_scenario(
+    out: ScenarioOutput,
+    payload: ScenarioInput,
+    *,
+    replace_short_body: bool = True,
+) -> ScenarioOutput:
+    """Deterministic Supermarketing QA pass for title, hook, and script quality.
+
+    The LLM can return a valid JSON shape that is still a weak marketing asset:
+    placeholder titles, keyword-stuffed hooks, or a short summary instead of a
+    10-minute script. This pass keeps good output, but replaces failed parts with
+    a 리치고/Supermarketing-safe scaffold before anything is saved or shown.
+    """
+    keywords = [kw for kw in payload.keywords if kw] or _keywords_from_sources(payload)
+    first_keyword = (keywords[0] if keywords else "부동산").strip() or "부동산"
+    topic = re.sub(r"\s+", " ", payload.topic or out.opening_title or first_keyword).strip()
+    data = out.model_dump()
+
+    if _is_bad_supermarketing_hook(str(data.get("hook_30s") or data.get("hook") or ""), keywords):
+        hook_30s = _build_fallback_hook_30s(topic)
+        data["hook"] = hook_30s
+        data["hook_30s"] = hook_30s
+
+    if _is_weak_title(str(data.get("opening_title") or "")):
+        data["opening_title"] = f"{topic}, 지금 움직여도 될까?"
+
+    titles = [str(title).strip() for title in data.get("title_candidates", []) if str(title).strip()]
+    if len(titles) != 5 or any(_is_weak_title(title) or _is_keyword_stuffed(title, keywords) for title in titles):
+        data["title_candidates"] = _build_supermarketing_titles(topic, first_keyword)
+
+    thumbs = [str(item).strip() for item in data.get("thumbnail_candidates", []) if str(item).strip()]
+    if len(thumbs) != 3 or any(len(item) > 18 or _is_weak_title(item) for item in thumbs):
+        data["thumbnail_candidates"] = ["지금 사도 될까?", "갈리는 신호", "숫자로 판단"]
+
+    sections = [dict(section) for section in data.get("body_sections", [])]
+    script_chars = sum(len(str(section.get("script") or section.get("narration") or "")) for section in sections)
+    if replace_short_body and (len(sections) < 6 or script_chars < 4500):
+        log.warning(
+            "scenario.gen.supermarketing_rebuild",
+            topic=topic,
+            sections=len(sections),
+            script_chars=script_chars,
+        )
+        return _fallback_scenario(payload)
+
+    data["body"] = [str(section.get("script") or section.get("narration") or "") for section in sections]
+    return _sanitize_scenario_output(ScenarioOutput(**data))
+
+
+def _is_bad_supermarketing_hook(text: str, keywords: list[str]) -> bool:
+    stripped = re.sub(r"\s+", " ", text or "").strip()
+    if len(stripped) < 40:
+        return True
+    if _is_keyword_stuffed(stripped, keywords):
+        return True
+    required_signals = ["실거래", "거래량", "전세", "대출", "월 상환", "판단", "기준"]
+    return sum(1 for signal in required_signals if signal in stripped) < 2
+
+
+def _is_keyword_stuffed(text: str, keywords: list[str]) -> bool:
+    stripped = text or ""
+    keyword_hits = sum(1 for keyword in keywords if keyword and keyword in stripped)
+    return " · " in stripped and keyword_hits >= 2 and any(token in stripped for token in ["때문에", "이슈", "시장"])
+
+
+def _is_weak_title(title: str) -> bool:
+    stripped = re.sub(r"\s+", " ", title or "").strip()
+    banned = ["제목", "썸네일", "뉴스 제목은 이게 아닙니다", "요약", "정리"]
+    if len(stripped) < 10:
+        return True
+    return any(token == stripped or token in stripped[:18] for token in banned)
+
+
+def _build_supermarketing_titles(topic: str, first_keyword: str) -> list[str]:
+    clean_topic = re.sub(r"\s+", " ", topic or first_keyword or "부동산 시장").strip()
+    return [
+        f"{clean_topic}, 지금 사도 되는 사람과 기다릴 사람",
+        f"대부분 놓치는 {first_keyword} 이후 집값 판단 기준 3가지",
+        "집값보다 먼저 봐야 할 전세·대출 신호",
+        "오르는 뉴스에 속지 않는 실수요자 체크리스트",
+        "기다릴까 움직일까, 숫자로 갈리는 부동산 판단법",
+    ]
 
 
 def _source_titles(sources: list[dict]) -> list[str]:

@@ -78,3 +78,42 @@ def test_scenario_prompt_sets_kim_kiwon_speaker_and_data_section(monkeypatch):
     assert "리치고 데이터 확인 및 분석" in prompt
     assert "키워드를 나열해 훅 문장으로 만들면 실패" in prompt
     assert "시청자 불안/오해 → 오늘 볼 판단 기준 → 얻는 이익" in prompt
+    assert "시청자 욕망/불안 + 숨은 긴장 + 판단 이익" in prompt
+
+
+def test_scenario_supermarketing_audit_rewrites_weak_llm_output(monkeypatch):
+    class WeakLLM:
+        def generate_json(self, system: str, user: str):
+            return {
+                "hook": "부동산 · 데이터분석 · 리치고 때문에 시장이 헷갈립니다.",
+                "hook_30s": "부동산 · 데이터분석 · 리치고 때문에 시장이 헷갈립니다. 오늘은 기준을 보겠습니다.",
+                "bridge_3min": "짧은 브릿지",
+                "body": ["짧은 본문"],
+                "body_sections": [{"heading": "본문", "script": "짧은 본문", "narration": "짧은 본문"}],
+                "conclusion": "결론",
+                "cta": "댓글 남겨주세요.",
+                "title_candidates": ["제목"],
+                "thumbnail_candidates": ["썸네일"],
+                "estimated_duration_min": 10,
+                "archetype": "판단형",
+            }
+
+    monkeypatch.setattr(generator, "llm", lambda temperature=0.6: WeakLLM())
+
+    result = generator.generate_scenario(
+        ScenarioInput(
+            topic="토허구역 전세 낀 집, 대부분 아직 모르는 내 집값 신호 3가지",
+            keywords=["부동산", "데이터분석", "리치고"],
+            target_duration_min=10,
+        )
+    )
+
+    joined = "\n".join(section.narration for section in result.body_sections)
+    assert "부동산 · 데이터분석 · 리치고 때문에" not in result.hook_30s
+    assert "키워드를 따라가는 게 아니라" in result.hook_30s
+    assert len(result.title_candidates) == 5
+    assert all(title != "제목" for title in result.title_candidates)
+    assert any("기다릴" in title or "놓치는" in title for title in result.title_candidates)
+    assert len(result.body_sections) >= 6
+    assert len(joined) > 2500
+    assert any("리치고 데이터" in section.heading for section in result.body_sections)
