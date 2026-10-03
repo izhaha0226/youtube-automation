@@ -23,7 +23,12 @@ BLUE = (58, 134, 255)
 BLACK = (10, 10, 16)
 WHITE = (255, 255, 255)
 
+# 2026-10-03 기본 이미지 모델 GPT Image 2.5 Flare · medium (1024² $0.013/장). 실패 시 아래 순서로 폴백.
+GPT_IMAGE_25 = "openai/gpt-image-2.5/flare/text-to-image"
+GPT_IMAGE_QUALITY = "medium"
+
 IMAGE_MODEL_PRIORITY = [
+    GPT_IMAGE_25,
     "fal-ai/nano-banana-2",
     "fal-ai/flux-pro/v1.1-ultra",
     "fal-ai/flux/dev",
@@ -145,6 +150,9 @@ def _ai_generate(prompt: str, negative: str, out_dir: Path, n: int = 2) -> list[
         try:
             for i in range(n):
                 args: dict = {"prompt": enriched, "num_images": 1}
+                if model == GPT_IMAGE_25:
+                    args["image_size"] = {"width": THUMB_W, "height": THUMB_H}
+                    args["quality"] = GPT_IMAGE_QUALITY
                 if "flux" in model:
                     args["image_size"] = {"width": THUMB_W, "height": THUMB_H}
                     args["enable_safety_checker"] = True
@@ -179,9 +187,12 @@ def _aux_generate(prompt: str, out_dir: Path, name: str) -> str | None:
 
     try:
         res = fal_client.subscribe(
-            "fal-ai/nano-banana-2",
+            GPT_IMAGE_25,
             arguments={
-                "prompt": prompt + " transparent background, isolated, 512x512 square",
+                "prompt": prompt + " transparent background, isolated, square",
+                "image_size": {"width": 1024, "height": 1024},
+                "background": "transparent",
+                "quality": GPT_IMAGE_QUALITY,
                 "num_images": 1,
             },
         )

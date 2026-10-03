@@ -39,7 +39,9 @@ _NEGATIVE = (
     "text, watermark, logo, ugly, deformed"
 )
 
-_MODEL = "fal-ai/flux-pro/v1.1-ultra"
+# 2026-10-03 GPT Image 2.5 Flare · medium으로 전환 (negative_prompt 미지원 → 프롬프트에 제외 조건을 붙인다)
+_MODEL = "openai/gpt-image-2.5/flare/text-to-image"
+_QUALITY = "medium"
 
 
 def generate_broll(
@@ -63,11 +65,10 @@ def generate_broll(
             res = fal_client.subscribe(
                 _MODEL,
                 arguments={
-                    "prompt": prompt,
-                    "negative_prompt": _NEGATIVE,
+                    "prompt": f"{prompt}\nAvoid: {_NEGATIVE}.",
                     "image_size": {"width": 1280, "height": 720},
+                    "quality": _QUALITY,
                     "num_images": 1,
-                    "enable_safety_checker": True,
                 },
             )
             imgs = res.get("images") or []
